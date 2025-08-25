@@ -1,0 +1,430 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:int-sftp="http://www.springframework.org/schema/integration/sftp"
+	xmlns:util="http://www.springframework.org/schema/util" xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans classpath:xsd/spring-beans-4.0.xsd
+		http://www.springframework.org/schema/context classpath:xsd/spring-context-4.0.xsd
+		http://www.springframework.org/schema/integration/sftp   classpath:xsd/spring-integration-sftp.xsd
+		http://www.springframework.org/schema/util classpath:xsd/spring-util-3.0.xsd">
+
+	 <context:property-placeholder
+		ignore-resource-not-found="true"
+		location="file:${PATH_PROPERTIES_INTEGRATOR}/ConfiguracionFTP/ConfiguracionFTP.properties" />
+	<bean id="log4jInitialization"
+		class="org.springframework.beans.factory.config.MethodInvokingFactoryBean"  lazy-init="false">
+		<property name="targetClass" value="org.springframework.util.Log4jConfigurer" />
+		<property name="targetMethod" value="initLogging" />
+		<property name="arguments">
+			<list>
+				<value>file:${PATH_PROPERTIES_INTEGRATOR}/ConfiguracionFTP/ConfiguracionFTP-log4j.xml</value>
+			</list>
+		</property>
+	</bean> 
+	
+	<bean id="ftpClientFactory"
+		class="org.springframework.integration.sftp.session.DefaultSftpSessionFactory">
+		<property name="host" value="${ftpAscard.host}" />
+		<property name="port" value="${ftpAscard.port}" />
+		<property name="user" value="${ftpAscard.username}" />
+		<property name="password" value="${ftpAscard.password}" />
+		<property name="serverAliveCountMax" value="2" />
+		<property name="serverAliveInterval" value="300000" />
+	</bean>
+	<bean id="csfAscard"
+		class="org.springframework.integration.file.remote.session.CachingSessionFactory">
+		<constructor-arg ref="ftpClientFactory" />
+		<constructor-arg value="${ftpAscard.maxConnection}" />
+		<property name="poolSize" value="${ftpAscard.sessionCacheSize}" />
+		<property name="sessionWaitTimeout" value="${ftpAscard.sessionWaitTimeout}" />
+	</bean>
+	<!-- BATCH COMPORTAMIENTO PAGO -->
+	<int-sftp:inbound-channel-adapter id="ftpInboundComportamientoPago"
+		channel="ftpComportamientoPago" session-factory="csfAscard"
+		filename-regex="${ftpComportamientoPago.filenamePattern}"
+		auto-create-local-directory="true" delete-remote-files="${ftpAscard.deleteRemoteFile}"
+		remote-directory="${ftpAscard.remotedirectory}" temporary-file-suffix=".writing"
+		local-directory="${ftpComportamientoPago.localdirectory}">
+		<int:poller cron="${ftpComportamientoPago.cronExpressionInboud}"
+			max-messages-per-poll="-1" />
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpComportamientoPago">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-gateway id="remoteftpLSComportamientoPago"
+		session-factory="csfAscard" request-channel="ftpComportamientoPago"
+		reply-channel="ftpChannelOutComportamientoPago" command="mv"
+		expression="'${ftpAscard.remotedirectory}'+payload.getName()"
+		rename-expression="'${ftpAscard.remotedirectoryCopy}'+payload.getName()+'_#{ T(java.lang.System).currentTimeMillis() }'+'_process'">
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />
+	</int-sftp:outbound-gateway>
+	<int:channel id="ftpChannelOutComportamientoPago">
+		<int:queue />
+	</int:channel>
+	<!-- BATCH SALIDA ACTIVACIONES -->
+	<int-sftp:inbound-channel-adapter id="ftpInboundSalidaActivaciones"
+		channel="ftpChannelSalidaActivaciones" session-factory="csfAscard"
+		filename-regex="${ftpSalidaActivaciones.filenamePattern}"
+		auto-create-local-directory="true" delete-remote-files="${ftpAscard.deleteRemoteFile}"
+		remote-directory="${ftpAscard.remotedirectory}" temporary-file-suffix=".writing"
+		local-directory="${ftpSalidaActivaciones.localdirectory}">
+		<int:poller cron="${ftpSalidaActivaciones.cronExpressionInboud}"
+			max-messages-per-poll="-1" />
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpChannelSalidaActivaciones">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-gateway id="remoteftpLSSalidaActivaciones"
+		session-factory="csfAscard" request-channel="ftpChannelSalidaActivaciones"
+		reply-channel="ftpChannelOutSalidaActivaciones" command="mv"
+		expression="'${ftpAscard.remotedirectory}'+payload.getName()"
+		rename-expression="'${ftpAscard.remotedirectoryCopy}'+payload.getName()+'_#{ T(java.lang.System).currentTimeMillis() }'+'_process'">
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />
+	</int-sftp:outbound-gateway>
+	<int:channel id="ftpChannelOutSalidaActivaciones">
+		<int:queue />
+	</int:channel>
+	<!-- BATCH BGH -->
+	<int-sftp:inbound-channel-adapter id="ftpInboundBGH"
+		channel="ftpChannelBgh" session-factory="csfAscard" filename-regex="${ftpBgh.filenamePattern}"
+		auto-create-local-directory="true" delete-remote-files="${ftpAscard.deleteRemoteFile}"
+		remote-directory="${ftpAscard.remotedirectory}" temporary-file-suffix=".writing"
+		local-directory="${ftpBgh.localdirectory}">
+		<int:poller cron="${ftpBgh.cronExpressionInboud}"
+			max-messages-per-poll="-1" />
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpChannelBgh">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-gateway id="remoteftpLSBGH"
+		session-factory="csfAscard" request-channel="ftpChannelBgh"
+		reply-channel="ftpChannelOutBgh" command="mv"
+		expression="'${ftpAscard.remotedirectory}'+payload.getName()"
+		rename-expression="'${ftpAscard.remotedirectoryCopy}'+payload.getName()+'_#{ T(java.lang.System).currentTimeMillis() }'+'_process'">
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />
+	</int-sftp:outbound-gateway>
+	<int:channel id="ftpChannelOutBgh">
+		<int:queue />
+	</int:channel>
+	<!-- BATCH RSE -->
+	<int-sftp:inbound-channel-adapter id="ftpInboundRSE"
+		channel="ftpChannelRse" session-factory="csfAscard" filename-regex="${ftpRse.filenamePattern}"
+		auto-create-local-directory="true" delete-remote-files="${ftpAscard.deleteRemoteFile}"
+		remote-directory="${ftpAscard.remotedirectory}" temporary-file-suffix=".writing"
+		local-directory="${ftpRse.localdirectory}">
+		<int:poller cron="${ftpRse.cronExpressionInboud}"
+			max-messages-per-poll="-1" />
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpChannelRse">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-gateway id="remoteftpLSRse"
+		session-factory="csfAscard" request-channel="ftpChannelRse"
+		reply-channel="ftpChannelOutRse" command="mv"
+		expression="'${ftpAscard.remotedirectory}'+payload.getName()"
+		rename-expression="'${ftpAscard.remotedirectoryCopy}'+payload.getName()+'_#{ T(java.lang.System).currentTimeMillis() }'+'_process'">
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />
+	</int-sftp:outbound-gateway>
+	<int:channel id="ftpChannelOutRse">
+		<int:queue />
+	</int:channel>
+	<!-- BATCH ACTUALIZACION DE SALDOS -->
+	<int-sftp:inbound-channel-adapter id="ftpInboundActualizacionSaldosAscard"
+		channel="ftpChannelActualizacionSaldosAscard" session-factory="csfAscard"
+		filename-regex="${ftpActualizacionSaldos.filenamePattern}"
+		auto-create-local-directory="true" delete-remote-files="${ftpAscard.deleteRemoteFile}"
+		remote-directory="${ftpAscard.remotedirectory}" temporary-file-suffix=".writing"
+		local-directory="${ftpActualizacionSaldos.localdirectory}">
+		<int:poller cron="${ftpActualizacionSaldos.cronExpressionInboud}"
+			max-messages-per-poll="-1" />
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpChannelActualizacionSaldosAscard">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-gateway id="remoteftpLSActualizacionSaldosAscard"
+		session-factory="csfAscard" request-channel="ftpChannelActualizacionSaldosAscard"
+		reply-channel="ftpChannelOutActualizacionSaldosAscard" command="mv"
+		expression="'${ftpAscard.remotedirectory}'+payload.getName()"
+		rename-expression="'${ftpAscard.remotedirectoryCopy}'+payload.getName()+'_#{ T(java.lang.System).currentTimeMillis() }'+'_process'">
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />
+	</int-sftp:outbound-gateway>
+	<int:channel id="ftpChannelOutActualizacionSaldosAscard">
+		<int:queue />
+	</int:channel>
+	<!-- BATCH REPORTE DE CONTABILIDAD -->
+	<int-sftp:inbound-channel-adapter id="ftpInboundReporteContabilidad"
+		channel="ftpChannelReporteContabilidad" session-factory="csfAscard"
+		filename-regex="${ftpReporteContabilidad.filenamePattern}"
+		auto-create-local-directory="true" delete-remote-files="${ftpAscard.deleteRemoteFile}"
+		remote-directory="${ftpAscard.remotedirectory}" temporary-file-suffix=".writing"
+		local-directory="${ftpReporteContabilidad.localdirectory}">
+		<int:poller cron="${ftpReporteContabilidad.cronExpressionInboud}"
+			max-messages-per-poll="-1" />
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpChannelReporteContabilidad">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-gateway id="remoteftpLSReporteContabilidad"
+		session-factory="csfAscard" request-channel="ftpChannelReporteContabilidad"
+		reply-channel="ftpChannelOutRepoerteContabilidad" command="mv"
+		expression="'${ftpAscard.remotedirectory}'+payload.getName()"
+		rename-expression="'${ftpAscard.remotedirectoryCopy}'+payload.getName()+'_#{ T(java.lang.System).currentTimeMillis() }'+'_process'">
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />
+	</int-sftp:outbound-gateway>
+	<int:channel id="ftpChannelOutRepoerteContabilidad">
+		<int:queue />
+	</int:channel>
+	<!-- BATCH CENTRALES DE RIESGO -->
+	<int-sftp:inbound-channel-adapter id="ftpInboundCentralesRiesgo"
+		channel="ftpChannelCentralesRiesgo" session-factory="csfAscard"
+		filename-regex="${ftpCentralesRiesgo.filenamePattern}"
+		auto-create-local-directory="true" delete-remote-files="${ftpAscard.deleteRemoteFile}"
+		remote-directory="${ftpAscard.remotedirectory}" temporary-file-suffix=".writing"
+		local-directory="${ftpCentralesRiesgo.localdirectory}">
+		<int:poller cron="${ftpCentralesRiesgo.cronExpressionInboud}"
+			max-messages-per-poll="-1" />
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpChannelCentralesRiesgo">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-gateway id="remoteftpLSCentralesRiesgo"
+		session-factory="csfAscard" request-channel="ftpChannelCentralesRiesgo"
+		reply-channel="ftpChannelOutCentralesRiesgo" command="mv"
+		expression="'${ftpAscard.remotedirectory}'+payload.getName()"
+		rename-expression="'${ftpAscard.remotedirectoryCopy}'+payload.getName()+'_#{ T(java.lang.System).currentTimeMillis() }'+'_process'">
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />
+	</int-sftp:outbound-gateway>
+	<int:channel id="ftpChannelOutCentralesRiesgo">
+		<int:queue />
+	</int:channel>
+	<!-- BATCH FRANQUICIAS ASCARD -->
+	<int-sftp:inbound-channel-adapter id="ftpInboundFranquiciasAscard"
+		channel="ftpFranquiciasAscard" session-factory="csfAscard"
+		filename-regex="${ftpFranquiciasAscard.filenamePattern}"
+		auto-create-local-directory="true" delete-remote-files="${ftpAscard.deleteRemoteFile}"
+		remote-directory="${ftpAscard.remotedirectory}" temporary-file-suffix=".writing"
+		local-directory="${ftpFranquiciasAscard.localdirectory}">
+		<int:poller cron="${ftpFranquiciasAscard.cronExpressionInboud}"
+			max-messages-per-poll="-1" />
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpFranquiciasAscard">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-gateway id="remoteftpLSFranquiciasAscard"
+		session-factory="csfAscard" request-channel="ftpFranquiciasAscard"
+		reply-channel="ftpChannelOutFranquiciasAscard" command="mv"
+		expression="'${ftpAscard.remotedirectory}'+payload.getName()"
+		rename-expression="'${ftpAscard.remotedirectoryCopy}'+payload.getName()+'_#{ T(java.lang.System).currentTimeMillis() }'+'_process'">
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />
+	</int-sftp:outbound-gateway>
+	<int:channel id="ftpChannelOutFranquiciasAscard">
+		<int:queue />
+	</int:channel>
+	<!-- BATCH INTERFAZ CONTABLE -->
+	<int-sftp:inbound-channel-adapter id="ftpInboundInterfazContable"
+		channel="ftpInterfazContable" session-factory="csfAscard"
+		filename-regex="${ftpInterfazContable.filenamePattern}"
+		auto-create-local-directory="true" delete-remote-files="${ftpAscard.deleteRemoteFile}"
+		remote-directory="${ftpAscard.remotedirectory}" temporary-file-suffix=".writing"
+		local-directory="${ftpInterfazContable.localdirectory}">
+		<int:poller cron="${ftpInterfazContable.cronExpressionInboud}"
+			max-messages-per-poll="-1" />
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpInterfazContable">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-gateway id="remoteftpLSInterfazContable"
+		session-factory="csfAscard" request-channel="ftpInterfazContable"
+		reply-channel="ftpChannelOutftpInterfazContable" command="mv"
+		expression="'${ftpAscard.remotedirectory}'+payload.getName()"
+		rename-expression="'${ftpAscard.remotedirectoryCopy}'+payload.getName()+'_#{ T(java.lang.System).currentTimeMillis() }'+'_process'">
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />
+	</int-sftp:outbound-gateway>
+	<int:channel id="ftpChannelOutftpInterfazContable">
+		<int:queue />
+	</int:channel>
+	<!-- BATCH SALIDA RECAUDOS ASCARD -->
+	<int-sftp:inbound-channel-adapter id="ftpInboundSalidaRecaudoAscard"
+		channel="ftpSalidaRecaudoAscard" session-factory="csfAscard"
+		filename-regex="${ftpSalidaRecaudoAscard.filenamePattern}"
+		auto-create-local-directory="true" delete-remote-files="${ftpAscard.deleteRemoteFile}"
+		remote-directory="${ftpAscard.remotedirectory}" temporary-file-suffix=".writing"
+		local-directory="${ftpSalidaRecaudoAscard.localdirectory}">
+		<int:poller cron="${ftpSalidaRecaudoAscard.cronExpressionInboud}"
+			max-messages-per-poll="-1" />
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpSalidaRecaudoAscard">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-gateway id="remoteftpLSSalidaRecaudoAscard"
+		session-factory="csfAscard" request-channel="ftpSalidaRecaudoAscard"
+		reply-channel="ftpChannelOutSalidaRecaudoAscard" command="mv"
+		expression="'${ftpAscard.remotedirectory}'+payload.getName()"
+		rename-expression="'${ftpAscard.remotedirectoryCopy}'+payload.getName()+'_#{ T(java.lang.System).currentTimeMillis() }'+'_process'">
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />
+	</int-sftp:outbound-gateway>
+	<int:channel id="ftpChannelOutSalidaRecaudoAscard">
+		<int:queue />
+	</int:channel>
+	<!-- BATCH RESPUESTAS NODEVADES NO MONETARIAS -->
+	<int-sftp:inbound-channel-adapter
+		id="ftpInboundRtaNovedadesNoMonetariasAscard" channel="ftpRtaNovedadesNoMonetariasAscard"
+		session-factory="csfAscard" filename-regex="${ftpRespuestaNovNomonetarias.filenamePattern}"
+		auto-create-local-directory="true" delete-remote-files="${ftpAscard.deleteRemoteFile}"
+		remote-directory="${ftpAscard.remotedirectory}" temporary-file-suffix=".writing"
+		local-directory="${ftpRespuestaNovNomonetarias.localdirectory}">
+		<int:poller cron="${ftpRespuestaNovNomonetarias.cronExpressionInboud}"
+			max-messages-per-poll="-1" />
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpRtaNovedadesNoMonetariasAscard">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-gateway
+		id="remoteftpLSRespuestasNovedadesNoMonetariasAscard" session-factory="csfAscard"
+		request-channel="ftpRtaNovedadesNoMonetariasAscard" reply-channel="ftpChannelOutRtaNovedadesNoMonetariasAscard"
+		command="mv" expression="'${ftpAscard.remotedirectory}'+payload.getName()"
+		rename-expression="'${ftpAscard.remotedirectoryCopy}'+payload.getName()+'_#{ T(java.lang.System).currentTimeMillis() }'+'_process'">
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />
+	</int-sftp:outbound-gateway>
+	<int:channel id="ftpChannelOutRtaNovedadesNoMonetariasAscard">
+		<int:queue />
+	</int:channel>
+	<!-- BATCH CANCELACION SALDOS A FAVOR -->
+	<int-sftp:inbound-channel-adapter
+		id="ftpInboundCancelacionSaldosAFavorAscard" channel="ftpCancelacionSaldosAFavorAscard"
+		session-factory="csfAscard" filename-regex="${ftpCancelacionSaldosAFavor.filenamePattern}"
+		auto-create-local-directory="true" delete-remote-files="${ftpAscard.deleteRemoteFile}"
+		remote-directory="${ftpAscard.remotedirectory}" temporary-file-suffix=".writing"
+		local-directory="${ftpCancelacionSaldosAFavor.localdirectory}">
+		<int:poller cron="${ftpCancelacionSaldosAFavor.cronExpressionInboud}"
+			max-messages-per-poll="-1" />
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpCancelacionSaldosAFavorAscard">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-gateway id="remoteftpLSCancelacionSaldosAFavorAscard"
+		session-factory="csfAscard" request-channel="ftpCancelacionSaldosAFavorAscard"
+		reply-channel="ftpChannelOutCancelacionSaldosAFavorAscard" command="mv"
+		expression="'${ftpAscard.remotedirectory}'+payload.getName()"
+		rename-expression="'${ftpAscard.remotedirectoryCopy}'+payload.getName()+'_#{ T(java.lang.System).currentTimeMillis() }'+'_process'">
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />
+	</int-sftp:outbound-gateway>
+	<int:channel id="ftpChannelOutCancelacionSaldosAFavorAscard">
+		<int:queue />
+	</int:channel>
+	<!-- BATCH SALIDA AJUSTES ASCARD -->
+	<int-sftp:inbound-channel-adapter id="ftpInboundSalidaAjustesAscardAscard"
+		channel="ftpGetSalidaAjustesAscardAscard" session-factory="csfAscard"
+		filename-regex="${ftpSalidaAjustesAscard.filenamePattern}"
+		auto-create-local-directory="true" delete-remote-files="${ftpAscard.deleteRemoteFile}"
+		remote-directory="${ftpAscard.remotedirectory}" temporary-file-suffix=".writing"
+		local-directory="${ftpSalidaAjustesAscard.localdirectory}">
+		<int:poller cron="${ftpSalidaAjustesAscard.cronExpressionInboud}"
+			max-messages-per-poll="-1" />
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetSalidaAjustesAscardAscard">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-gateway id="remoteftpLSSalidaAjustesAscardAscard"
+		session-factory="csfAscard" request-channel="ftpGetSalidaAjustesAscardAscard"
+		reply-channel="ftpChannelOutSalidaAjustesAscardAscard" command="mv"
+		expression="'${ftpAscard.remotedirectory}'+payload.getName()"
+		rename-expression="'${ftpAscard.remotedirectoryCopy}'+payload.getName()+'_#{ T(java.lang.System).currentTimeMillis() }'+'_process'">
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />
+	</int-sftp:outbound-gateway>
+	<int:channel id="ftpChannelOutSalidaAjustesAscardAscard">
+		<int:queue />
+	</int:channel>
+	<!-- BATCH SALIDA APLICACION PNAS ASC -->
+	<int-sftp:inbound-channel-adapter
+		id="ftpInboundSalidaAplicacionPnaAscAscard" channel="ftpGetSalidaAplicacionPnaAscAscard"
+		session-factory="csfAscard" filename-regex="${ftpSalidaAplicacionPNAAsc.filenamePattern}"
+		auto-create-local-directory="true" delete-remote-files="${ftpAscard.deleteRemoteFile}"
+		remote-directory="${ftpAscard.remotedirectory}" temporary-file-suffix=".writing"
+		local-directory="${ftpSalidaAplicacionPNAAsc.localdirectory}">
+		<int:poller cron="${ftpSalidaAplicacionPNAAsc.cronExpressionInboud}"
+			max-messages-per-poll="-1" />
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetSalidaAplicacionPnaAscAscard">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-gateway id="remoteftpLSSalidaAplicacionPnaAscAscard"
+		session-factory="csfAscard" request-channel="ftpGetSalidaAplicacionPnaAscAscard"
+		reply-channel="ftpChannelOutSalidaAplicacionPnaAscAscard" command="mv"
+		expression="'${ftpAscard.remotedirectory}'+payload.getName()"
+		rename-expression="'${ftpAscard.remotedirectoryCopy}'+payload.getName()+'_#{ T(java.lang.System).currentTimeMillis() }'+'_process'">
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />
+	</int-sftp:outbound-gateway>
+	<int:channel id="ftpChannelOutSalidaAplicacionPnaAscAscard">
+		<int:queue />
+	</int:channel>
+	<!-- BATCH COBRANZAS ASCARD -->
+	<int-sftp:inbound-channel-adapter id="ftpInboundCobranzasAscard"
+		channel="ftpGetCobranzasAscard" session-factory="csfAscard"
+		filename-regex="${ftpCobranzas.filenamePattern}"
+		auto-create-local-directory="true" delete-remote-files="${ftpAscard.deleteRemoteFile}"
+		remote-directory="${ftpAscard.remotedirectory}" temporary-file-suffix=".writing"
+		local-directory="${ftpCobranzas.localdirectory}">
+		<int:poller cron="${ftpCobranzas.cronExpressionInboud}"
+			max-messages-per-poll="-1" />
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetCobranzasAscard">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-gateway id="remoteftpLSCobranzasAscard"
+		session-factory="csfAscard" request-channel="ftpGetCobranzasAscard"
+		reply-channel="ftpChannelOutCobranzasAscard" command="mv"
+		expression="'${ftpAscard.remotedirectory}'+payload.getName()"
+		rename-expression="'${ftpAscard.remotedirectoryCopy}'+payload.getName()+'_#{ T(java.lang.System).currentTimeMillis() }'+'_process'">
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />
+	</int-sftp:outbound-gateway>
+	<int:channel id="ftpChannelOutCobranzasAscard">
+		<int:queue />
+	</int:channel>
+	<!-- BATCH ENDUADAMIENTO ASCARD -->
+	<int-sftp:inbound-channel-adapter id="ftpInboundEndeudamientoAscard"
+		channel="ftpGetEndeudamientoAscard" session-factory="csfAscard"
+		filename-regex="${ftpEnduadamiento.filenamePattern}"
+		auto-create-local-directory="true" delete-remote-files="${ftpAscard.deleteRemoteFile}"
+		remote-directory="${ftpAscard.remotedirectory}" temporary-file-suffix=".writing"
+		local-directory="${ftpEnduadamiento.localdirectory}">
+		<int:poller cron="${ftpEnduadamiento.cronExpressionInboud}"
+			max-messages-per-poll="-1" />
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetEndeudamientoAscard">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-gateway id="remoteftpLSEndeudamientoAscard"
+		session-factory="csfAscard" request-channel="ftpGetEndeudamientoAscard"
+		reply-channel="ftpChannelOutEndeudamientoAscard" command="mv"
+		expression="'${ftpAscard.remotedirectory}'+payload.getName()"
+		rename-expression="'${ftpAscard.remotedirectoryCopy}'+payload.getName()+'_#{ T(java.lang.System).currentTimeMillis() }'+'_process'">
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />
+	</int-sftp:outbound-gateway>
+	<int:channel id="ftpChannelOutEndeudamientoAscard">
+		<int:queue />
+	</int:channel>
+	<!-- BATCH METRICAS ASCARD -->
+	<int-sftp:inbound-channel-adapter id="ftpInboundMetricasAscard"
+		channel="ftpGetMetricasAscard" session-factory="csfAscard"
+		filename-regex="${ftpMetricasAscard.filenamePattern}"
+		auto-create-local-directory="true" delete-remote-files="${ftpAscard.deleteRemoteFile}"
+		remote-directory="${ftpAscard.remotedirectory}" temporary-file-suffix=".writing"
+		local-directory="${ftpMetricasAscard.localdirectory}">
+		<int:poller cron="${ftpMetricasAscard.cronExpressionInboud}"
+			max-messages-per-poll="-1" />
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetMetricasAscard">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-gateway id="remoteftpLSMetricasAscard"
+		session-factory="csfAscard" request-channel="ftpGetMetricasAscard"
+		reply-channel="ftpChannelOutMetricasAscard" command="mv"
+		expression="'${ftpAscard.remotedirectory}'+payload.getName()"
+		rename-expression="'${ftpAscard.remotedirectoryCopy}'+payload.getName()+'_#{ T(java.lang.System).currentTimeMillis() }'+'_process'">
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />
+	</int-sftp:outbound-gateway>
+	<int:channel id="ftpChannelOutMetricasAscard">
+		<int:queue />
+	</int:channel>		
+</beans>

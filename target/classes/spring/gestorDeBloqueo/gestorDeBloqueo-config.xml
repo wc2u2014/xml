@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans classpath:xsd/spring-beans-4.0.xsd
+                            http://www.springframework.org/schema/context classpath:xsd/spring-context-4.0.xsd">
+ 
+	
+	<context:property-placeholder
+		ignore-resource-not-found="true"
+		location="file:${PATH_PROPERTIES_INTEGRATOR}/GestorBloqueo/GestorBloqueo.properties" />
+	<bean id="log4jInitialization"
+		class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+		<property name="targetClass" value="org.springframework.util.Log4jConfigurer" />
+		<property name="targetMethod" value="initLogging" />
+		<property name="arguments">
+			<list>
+				<value>file:${PATH_PROPERTIES_INTEGRATOR}/GestorBloqueo/GestorBloqueo-log4j.xml</value>
+			</list>
+		</property>
+	</bean>	
+	<!-- AVISOS PAGOS  -->
+    <bean name="genericProccessAvisosPago" class="co.com.claro.financialintegrator.implement.AvisosPagos">    	   	
+    	<property name="pros">
+    		<props>
+    			<prop key="WSLConsultaConfiguracionBatchAddress">${wsdl.WSLConsultaConfiguracionBatchAddress}</prop>
+    		    <prop key="WSLConsultaConfiguracionBatchTimeOut">${wsdl.WSLConsultaConfiguracionBatchTimeOut}</prop>
+				<prop key="BatchName">BatchFinancialIntegratorAvisosPagos</prop>				
+    		</props>
+    	</property>
+    </bean>
+    <bean name="complexJobDetailAvisosPago"    class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+        <property name="jobClass" value="co.com.claro.financialintegrator.spring.quartz.ScheduledJob" />
+        <property name="jobDataMap">
+            <map>
+                <entry key="genericProccess" value-ref="genericProccessAvisosPago" />
+            </map>
+        </property>
+        <property name="durability" value="true" />
+    </bean>
+  
+    <!-- Run the job every 5 seconds only on Weekends -->
+    <bean id="cronTriggerAvisosPago"  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail" ref="complexJobDetailAvisosPago" />
+        <property name="cronExpression" value="${avisospagos.quartz.cronExpression}" />
+    </bean>
+    <!-- NOTIFICACION AVISOS PAGOS  -->
+    <bean name="genericProccessNotificacionAvisosPagos" class="co.com.claro.financialintegrator.implement.NotificacionAvisosPagos">    	   	
+    	<property name="pros">
+    		<props>
+    			<prop key="WSLConsultaConfiguracionBatchAddress">${wsdl.WSLConsultaConfiguracionBatchAddress}</prop>
+    		    <prop key="WSLConsultaConfiguracionBatchTimeOut">${wsdl.WSLConsultaConfiguracionBatchTimeOut}</prop>
+				<prop key="BatchName">BatchFinancialIntegratorNotificacionAvisosPagos</prop>				
+    		</props>
+    	</property>
+    </bean>
+    <bean name="complexJobDetailNotificacionAvisosPagos"    class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+        <property name="jobClass" value="co.com.claro.financialintegrator.spring.quartz.ScheduledJob" />
+        <property name="jobDataMap">
+            <map>
+                <entry key="genericProccess" value-ref="genericProccessNotificacionAvisosPagos" />
+            </map>
+        </property>
+        <property name="durability" value="true" />
+    </bean>
+     <!-- Run the job every 5 seconds only on Weekends -->
+    <bean id="cronTriggerNotificacionAvisosPagos"  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail" ref="complexJobDetailNotificacionAvisosPagos" />
+        <property name="cronExpression" value="${notificacionavisospagos.quartz.cronExpression}" />
+    </bean>
+   <!-- NOTIFICACION CREDITOS NUEVOS  -->
+    <bean name="genericProccessNotificacionCreditosNuevos" class="co.com.claro.financialintegrator.implement.NotificacionCreditosNuevos">    	   	
+    	<property name="pros">
+    		<props>
+    			<prop key="WSLConsultaConfiguracionBatchAddress">${wsdl.WSLConsultaConfiguracionBatchAddress}</prop>
+    		    <prop key="WSLConsultaConfiguracionBatchTimeOut">${wsdl.WSLConsultaConfiguracionBatchTimeOut}</prop>
+				<prop key="BatchName">BatchFinancialIntegratorNotificacionCreditosNuevos</prop>				
+    		</props>
+    	</property>
+    </bean>
+    <bean name="complexJobDetailNotificacionCreditosNuevos"    class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+        <property name="jobClass" value="co.com.claro.financialintegrator.spring.quartz.ScheduledJob" />
+        <property name="jobDataMap">
+            <map>
+                <entry key="genericProccess" value-ref="genericProccessNotificacionCreditosNuevos" />
+            </map>
+        </property>
+        <property name="durability" value="true" />
+    </bean>
+    <!-- Run the job every 5 seconds only on Weekends -->
+    <bean id="cronTriggerNotificacionCreditosNuevos"  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail" ref="complexJobDetailNotificacionCreditosNuevos" />
+        <property name="cronExpression" value="${notificacionacreditonuevos.quartz.cronExpression}" />
+    </bean>
+    <!-- NOTIFICACION MORAS  -->
+    <bean name="genericProccessNotificacionMoras" class="co.com.claro.financialintegrator.implement.NotificacionMoras">    	   	
+    	<property name="pros">
+    		<props>
+    			<prop key="WSLConsultaConfiguracionBatchAddress">${wsdl.WSLConsultaConfiguracionBatchAddress}</prop>
+    		    <prop key="WSLConsultaConfiguracionBatchTimeOut">${wsdl.WSLConsultaConfiguracionBatchTimeOut}</prop>
+				<prop key="BatchName">BatchFinancialIntegratorNotificacionMoras</prop>				
+    		</props>
+    	</property>
+    </bean>
+    <bean name="complexJobDetailNotificacionMoras"    class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+        <property name="jobClass" value="co.com.claro.financialintegrator.spring.quartz.ScheduledJob" />
+        <property name="jobDataMap">
+            <map>
+                <entry key="genericProccess" value-ref="genericProccessNotificacionMoras" />
+            </map>
+        </property>
+        <property name="durability" value="true" />
+    </bean>
+    <!-- Run the job every 5 seconds only on Weekends -->
+    <bean id="cronTriggerNotificacionMoras"  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail" ref="complexJobDetailNotificacionMoras" />
+        <property name="cronExpression" value="${notificacionamoras.quartz.cronExpression}" />
+    </bean>
+    <!-- RECHAZOS PAGOS  -->
+    <bean name="genericProccessRechazosPagos" class="co.com.claro.financialintegrator.implement.RechazosPagos">    	   	
+    	<property name="pros">
+    		<props>
+    			<prop key="WSLConsultaConfiguracionBatchAddress">${wsdl.WSLConsultaConfiguracionBatchAddress}</prop>
+    		    <prop key="WSLConsultaConfiguracionBatchTimeOut">${wsdl.WSLConsultaConfiguracionBatchTimeOut}</prop>
+				<prop key="BatchName">BatchFinancialIntegratorRechazosPagos</prop>				
+    		</props>
+    	</property>
+    </bean>
+    <bean name="complexJobDetailRechazosPagos"    class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+        <property name="jobClass" value="co.com.claro.financialintegrator.spring.quartz.ScheduledJob" />
+        <property name="jobDataMap">
+            <map>
+                <entry key="genericProccess" value-ref="genericProccessRechazosPagos" />
+            </map>
+        </property>
+        <property name="durability" value="true" />
+    </bean>
+    <!-- Run the job every 5 seconds only on Weekends -->
+    <bean id="cronTriggerRechazosPagos"  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail" ref="complexJobDetailRechazosPagos" />
+        <property name="cronExpression" value="${rechazosPagos.quartz.cronExpression}" />
+    </bean>
+    <!-- NOTIFICACION RECHAZOS PAGOS  -->
+    <bean name="genericProccessNotificacionRechazosPagos" class="co.com.claro.financialintegrator.implement.NotificacionPagosRechazados">    	   	
+    	<property name="pros">
+    		<props>
+    			<prop key="WSLConsultaConfiguracionBatchAddress">${wsdl.WSLConsultaConfiguracionBatchAddress}</prop>
+    		    <prop key="WSLConsultaConfiguracionBatchTimeOut">${wsdl.WSLConsultaConfiguracionBatchTimeOut}</prop>
+				<prop key="BatchName">BatchFinancialIntegratorNotificacionRechazosPagos</prop>				
+    		</props>
+    	</property>
+    </bean>
+    <bean name="complexJobDetailNotificacionRechazosPagos"    class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+        <property name="jobClass" value="co.com.claro.financialintegrator.spring.quartz.ScheduledJob" />
+        <property name="jobDataMap">
+            <map>
+                <entry key="genericProccess" value-ref="genericProccessNotificacionRechazosPagos" />
+            </map>
+        </property>
+        <property name="durability" value="true" />
+    </bean>
+    <!-- Run the job every 5 seconds only on Weekends -->
+    <bean id="cronTriggerNotificacionRechazosPagos"  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail" ref="complexJobDetailNotificacionRechazosPagos" />
+        <property name="cronExpression" value="${notificacionrechazosPagos.quartz.cronExpression}" />
+    </bean>
+     <!-- NOTIFICACION CREDITOS FINLIZADOS PAGOS  -->
+    <bean name="genericProccessNotificacionCreditosFinalizados" class="co.com.claro.financialintegrator.implement.NotificacionCreditosFinalizados">    	   	
+    	<property name="pros">
+    		<props>
+    			<prop key="WSLConsultaConfiguracionBatchAddress">${wsdl.WSLConsultaConfiguracionBatchAddress}</prop>
+    		    <prop key="WSLConsultaConfiguracionBatchTimeOut">${wsdl.WSLConsultaConfiguracionBatchTimeOut}</prop>
+				<prop key="BatchName">BatchFinancialIntegratorNotificacionCredFinal</prop>				
+    		</props>
+    	</property>
+    </bean>
+    <bean name="complexJobDetailNotificacionCreditosFinalizados"    class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+        <property name="jobClass" value="co.com.claro.financialintegrator.spring.quartz.ScheduledJob" />
+        <property name="jobDataMap">
+            <map>
+                <entry key="genericProccess" value-ref="genericProccessNotificacionCreditosFinalizados" />
+            </map>
+        </property>
+        <property name="durability" value="true" />
+    </bean>
+    <!-- Run the job every 5 seconds only on Weekends -->
+    <bean id="cronTriggerNotificacionCreditosFinalizados"  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail" ref="complexJobDetailNotificacionCreditosFinalizados" />
+        <property name="cronExpression" value="${notificacioncreditosfinalizados.quartz.cronExpression}" />
+    </bean>
+    <!-- Scheduler factory bean to glue together jobDetails and triggers to Configure Quartz Scheduler -->
+    <bean  class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="jobDetails">
+            <list>                
+                <ref bean="complexJobDetailAvisosPago" />
+                <ref bean="complexJobDetailNotificacionAvisosPagos" />
+                <ref bean="complexJobDetailNotificacionCreditosNuevos" />
+                <ref bean="complexJobDetailNotificacionMoras" />
+                <ref bean="complexJobDetailRechazosPagos" />
+                <ref bean="complexJobDetailNotificacionRechazosPagos" />
+                <ref bean="complexJobDetailNotificacionCreditosFinalizados" />
+            </list>
+        </property>
+ 
+        <property name="triggers">
+            <list>               
+                <ref bean="cronTriggerAvisosPago" />
+                <ref bean="cronTriggerNotificacionAvisosPagos" />
+                <ref bean="cronTriggerNotificacionCreditosNuevos" />
+                <ref bean="cronTriggerNotificacionMoras" />
+                <ref bean="cronTriggerRechazosPagos" />
+                <ref bean="cronTriggerNotificacionRechazosPagos" />
+                <ref bean="cronTriggerNotificacionCreditosFinalizados" />
+            </list>
+        </property>
+    </bean>
+</beans>

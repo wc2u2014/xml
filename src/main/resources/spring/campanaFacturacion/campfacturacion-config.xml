@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans classpath:xsd/spring-beans-4.0.xsd
+                            http://www.springframework.org/schema/context classpath:xsd/spring-context-4.0.xsd">
+
+	<context:property-placeholder
+		ignore-resource-not-found="true"
+		location="file:${PATH_PROPERTIES_INTEGRATOR}/CampanaFacturacion/CampanaFacturacion.properties" />
+	<bean id="log4jInitialization"
+		class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+		<property name="targetClass" value="org.springframework.util.Log4jConfigurer" />
+		<property name="targetMethod" value="initLogging" />
+		<property name="arguments">
+			<list>
+				<value>file:${PATH_PROPERTIES_INTEGRATOR}/CampanaFacturacion/CampanaFacturacion-log4j.xml</value>
+			</list>
+		</property>
+	</bean>
+	<bean id="mailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+		<property name="host" value="${mail.host}" />
+		<property name="port" value="${mail.port}" />
+
+		<property name="javaMailProperties">
+			<props>
+				<prop key="mail.smtp.auth">false</prop>
+				<prop key="mail.smtp.starttls.enable">true</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="mailGeneric" class="co.com.claro.MailGenericAPI.MailGeneric">
+		 <constructor-arg ref="mailSender"/>
+ 	</bean>	
+	<bean name="genericProccess"
+		class="co.com.claro.financialintegrator.implement.CampanaFacturacion">		
+		<property name="mail" ref="mailGeneric" />
+		<property name="pros">
+			<props>
+				<prop key="WSLConsultaConfiguracionBatchAddress">${wsdl.WSLConsultaConfiguracionBatchAddress}</prop>
+    		    <prop key="WSLConsultaConfiguracionBatchTimeOut">${wsdl.WSLConsultaConfiguracionBatchTimeOut}</prop>				
+				<prop key="BatchName">CampanaFacturacion</prop>
+			</props>
+		</property>
+	</bean>
+	<bean name="complexJobDetail"
+		class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass"
+			value="co.com.claro.financialintegrator.spring.quartz.ScheduledJob" />
+		<property name="jobDataMap">
+			<map>
+				<entry key="genericProccess" value-ref="genericProccess" />
+			</map>
+		</property>
+		<property name="durability" value="true" />
+	</bean>
+
+	<!-- Run the job every 5 seconds only on Weekends -->
+	<bean id="cronTrigger"
+		class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="complexJobDetail" />
+		<property name="cronExpression" value="${quartz.cronExpression}" />
+	</bean>
+	<!-- Scheduler factory bean to glue together jobDetails and triggers to 
+		Configure Quartz Scheduler -->
+	<bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="jobDetails">
+			<list>
+				<ref bean="complexJobDetail" />
+			</list>
+		</property>
+
+		<property name="triggers">
+			<list>
+				<ref bean="cronTrigger" />
+			</list>
+		</property>
+	</bean>
+</beans>

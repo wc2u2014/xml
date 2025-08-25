@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans classpath:xsd/spring-beans-4.0.xsd
+                            http://www.springframework.org/schema/context classpath:xsd/spring-context-4.0.xsd">
+
+<!--     <context:property-placeholder
+        ignore-resource-not-found="true"
+        location="file:/u01/Admin/applications/config/CO_FINEQUIPOS_OSB_PR/config/RechazosAscard/RechazosAscard.properties" />
+    
+    <bean id="log4jInitialization"
+              class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="targetClass" value="org.springframework.util.Log4jConfigurer" />
+        <property name="targetMethod" value="initLogging" />
+        <property name="arguments">
+            <list>
+                <value>file:/u01/Admin/applications/config/CO_FINEQUIPOS_OSB_PR/config/RechazosAscard/RechazosAscard-log4j.xml</value>
+            </list>
+        </property>
+    </bean> -->
+    <context:property-placeholder
+        ignore-resource-not-found="true"
+        location="file:${PATH_PROPERTIES_INTEGRATOR}/RechazosAscard/RechazosAscard.properties" />
+    
+    <bean id="log4jInitialization"
+              class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="targetClass" value="org.springframework.util.Log4jConfigurer" />
+        <property name="targetMethod" value="initLogging" />
+        <property name="arguments">
+            <list>
+                <value>file:${PATH_PROPERTIES_INTEGRATOR}/RechazosAscard/RechazosAscard-log4j.xml</value>
+            </list>
+        </property>
+    </bean>
+   <bean id="mailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+	<property name="host" value="${mail.host}" />
+	<property name="port" value="${mail.port}" />
+
+	
+	<property name="javaMailProperties">
+	   <props>
+       	      <prop key="mail.smtp.auth">false</prop>
+       	      <prop key="mail.smtp.starttls.enable">true</prop>
+       	   </props>
+	</property>
+	</bean>
+ <bean id="mailGeneric" class="co.com.claro.MailGenericAPI.MailGeneric">
+		 <constructor-arg ref="mailSender"/>
+ </bean>  
+    <!--  cron configuration -->	
+    <bean name="genericProccess" class="co.com.claro.financialintegrator.implement.RechazosAscard">
+        <property name="mail" ref="mailGeneric" />        
+        <property name="pros">
+            <props>
+                <prop key="path">${file.pathProccess}</prop>
+                <prop key="fileProccess">${file.fileProccess}</prop>
+                <prop key="pathCopyFile">${file.pathCopyFile}</prop>
+                <prop key="ExtfileProcess">${file.ExtfileProcess}</prop> 
+                <prop key="fileMovMonetario">${file.fileMovMonetario}</prop>
+                <prop key="fileSalidaRecaudoBancosAscard">${file.fileSalidaRecaudoBancosAscard}</prop>
+                <prop key="fileRechazoRecaudoSicacom">${file.fileRechazoRecaudoSicacom}</prop>
+                <prop key="fileHistoryProccess">${file.fileHistoryProccess}</prop>                         
+                <prop key="fileNameFile">${file.nameFile}</prop>
+                <prop key="fileExtensionFile">${file.extensionFile}</prop>     
+                <prop key="sirCodigobanco">${SIR.sirCodigobanco}</prop>           
+                <prop key="WSLAuditoriaBatchAddress">${wsdl.WSLAuditoriaBatchAddress}</prop>
+                <prop key="WSLAuditoriaBatchPagoTimeOut">${wsdl.WSLAuditoriaBatchTimeOut}</prop>
+                <prop key="WSLConsultaRegionAddress">${wsdl.WSLConsultaRegionAddress}</prop>
+                <prop key="WSLConsultaRegionTimeOut">${wsdl.WSLConsultaRegionTimeOut}</prop>   
+                <prop key="WSLConsultaMotivoPagoAddress">${wsdl.WSLConsultaMotivoPagoAddress}</prop>
+                <prop key="WSLConsultaMotivoPagoTimeOut">${wsdl.WSLConsultaMotivoPagoTimeOut}</prop>
+                <prop key="WSLConsultaCodigoErroresCodigoPagoAddress">${wsdl.WSLConsultaCodigoErroresCodigoPagoAddress}</prop>
+                <prop key="WSLConsultaCodigoErroresCodigoPagoTimeOut">${wsdl.WSLConsultaCodigoErroresCodigoPagoTimeOut}</prop>
+                <prop key="toAddressNotificacion">${mail.toAddressNotificacion}</prop> 	
+                <prop key="MVDTPRVALUE">${CRMVD.MVDTPR}</prop>
+                <prop key="MVDORIVALUE">${CRMVD.MVDORI}</prop>     		
+                <prop key="MVDTRNVALUE">${CRMVD.MVDTRN}</prop>     		
+ 				<prop key="fromAddress">${mail.fromAddress}</prop>
+ 				<prop key="subject">${mail.subject}</prop>
+ 				<prop key="msgBody">${mail.msgBody}</prop>             
+                <prop key="BatchName">RechazosAscard</prop>           
+            </props>
+        </property>
+    </bean>
+    <bean name="complexJobDetail"    class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+        <property name="jobClass" value="co.com.claro.financialintegrator.spring.quartz.ScheduledJob" />
+        <property name="jobDataMap">
+            <map>
+                <entry key="genericProccess" value-ref="genericProccess" />
+            </map>
+        </property>
+        <property name="durability" value="true" />
+    </bean>
+  
+    <!-- Run the job every 5 seconds only on Weekends -->
+    <bean id="cronTrigger"  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail" ref="complexJobDetail" />
+        <property name="cronExpression" value="${quartz.cronExpression}" />
+    </bean>
+    <!-- Scheduler factory bean to glue together jobDetails and triggers to Configure Quartz Scheduler -->
+    <bean  class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="jobDetails">
+            <list>                
+                <ref bean="complexJobDetail" />
+            </list>
+        </property>
+ 
+        <property name="triggers">
+            <list>               
+                <ref bean="cronTrigger" />
+            </list>
+        </property>
+    </bean>
+</beans>

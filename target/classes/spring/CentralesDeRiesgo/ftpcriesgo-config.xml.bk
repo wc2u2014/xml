@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:int-sftp="http://www.springframework.org/schema/integration/sftp"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans classpath:xsd/spring-beans-4.0.xsd
+		http://www.springframework.org/schema/context classpath:xsd/spring-context-4.0.xsd
+		http://www.springframework.org/schema/integration/sftp   classpath:xsd/spring-integration-sftp.xsd
+		http://www.springframework.org/schema/util classpath:xsd/spring-util-3.0.xsd">
+	
+	<context:property-placeholder
+		ignore-resource-not-found="true"
+		location="file:${oracle.server.config.dir}/ReporteContabilidad/ReporteContabilidad.properties" />
+	<!--  <context:property-placeholder
+		ignore-resource-not-found="true"
+		location="file:/app/RunnablePGP/Bgh/Bgh.properties" /> --> 
+	<bean id="ftpClientFactory" class="org.springframework.integration.sftp.session.DefaultSftpSessionFactory">
+	
+		<property name="host" value="${ftp.host}"/>
+		<property name="port" value="${ftp.port}"/>
+		<property name="user" value="${ftp.username}"/>
+		<property name="privateKey" value="file:${oracle.server.config.dir}${ftp.privateKey}"/>
+		<property name="privateKeyPassphrase" value="${ftp.password}"/>	
+		
+		<property name="password" value="${ftp.password}"/>
+	</bean>
+	<bean id="csf" class="org.springframework.integration.file.remote.session.CachingSessionFactory">
+		<constructor-arg ref="ftpClientFactory"/>
+	</bean>
+	<int-sftp:inbound-channel-adapter id="ftpInbound"
+				channel="ftpChannel"
+				session-factory="ftpClientFactory"				
+				filename-regex="${ftp.filenamePattern}"
+				auto-create-local-directory="true"
+				delete-remote-files="false" 
+				remote-directory="${ftp.remotedirectory}"
+				temporary-file-suffix=".writing"
+				local-directory="${ftp.localdirectory}">
+			<int:poller cron="${ftp.cronExpressionInboud}" max-messages-per-poll="-1"/>
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpChannel">
+			<int:queue />	
+	</int:channel>	
+	<int-sftp:outbound-gateway id="remoteftpLS"
+		session-factory="csf"
+		request-channel="ftpChannel"	
+		reply-channel="ftpChannelOut"	
+		command="mv"
+		expression="'${ftp.remotedirectory}'+payload.getName()"
+		rename-expression="'${ftp.remotedirectory}'+payload.getName()+'_#{ T(java.lang.System).currentTimeMillis() }'+'_process'"		
+	>
+			<int:poller fixed-rate="1000" max-messages-per-poll="-1" /> 
+	</int-sftp:outbound-gateway>
+	<int:channel id="ftpChannelOut">
+			<int:queue />	
+	</int:channel>	
+	
+</beans>

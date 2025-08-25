@@ -1,0 +1,688 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:int-sftp="http://www.springframework.org/schema/integration/sftp"
+	xmlns:util="http://www.springframework.org/schema/util" xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans classpath:xsd/spring-beans-4.0.xsd
+		http://www.springframework.org/schema/context classpath:xsd/spring-context-4.0.xsd
+		http://www.springframework.org/schema/integration/sftp   classpath:xsd/spring-integration-sftp.xsd
+		http://www.springframework.org/schema/util classpath:xsd/spring-util-3.0.xsd">
+
+   <context:property-placeholder
+		ignore-resource-not-found="true"
+		location="file:${PATH_PROPERTIES_INTEGRATOR}/ConfiguracionFTP/ConfiguracionFTP.properties" />
+	<bean id="log4jInitialization"
+		class="org.springframework.beans.factory.config.MethodInvokingFactoryBean" lazy-init="false">
+		<property name="targetClass" value="org.springframework.util.Log4jConfigurer" />
+		<property name="targetMethod" value="initLogging" />
+		<property name="arguments">
+			<list>
+				<value>file:${PATH_PROPERTIES_INTEGRATOR}/ConfiguracionFTP/ConfiguracionFTP-log4j.xml</value>
+			</list>
+		</property>
+	</bean> 
+  <!-- 	 <context:property-placeholder
+		ignore-resource-not-found="true"
+		location="file:/u01/Admin/applications/config/CO_FINEQUIPOS_OSB_PR/config/ConfiguracionFTP/ConfiguracionFTP.properties" /> -->
+	<bean id="ftpClientFactorybscso" class="org.springframework.integration.sftp.session.DefaultSftpSessionFactory">	
+		<property name="host" value="${ftpBscs.host}"/>
+		<property name="port" value="${ftpBscs.port}"/>
+		<property name="user" value="${ftpBscs.username}"/>	
+		<property name="password" value="${ftpBscs.password}"/>
+	</bean>
+	<bean id="csfbscso" class="org.springframework.integration.file.remote.session.CachingSessionFactory">
+		<constructor-arg ref="ftpClientFactorybscso" />		
+		<property name="poolSize" value="${ftpBscsOutbound.sessionCacheSize}" />
+		<property name="sessionWaitTimeout" value="${ftpBscsOutbound.sessionWaitTimeout}" />
+	</bean>	
+	<!-- BATCH ACTIVACIONES COPY -->  
+	<int-sftp:inbound-channel-adapter id="ftpInboundActivacionesCopyBSCS"
+				channel="ftpGetChannelActivacionesCopyBSCS"
+				session-factory="csfbscso"	
+				filename-pattern="*.NOPROCESSXX"		
+				remote-directory="${ftpActivaciones.remotedirectoryCopy}"				
+				local-directory="${ftpActivaciones.filelocalprocess}">
+		<int:poller cron="${ftpActivaciones.cronExpressionOutbound}" max-messages-per-poll="-1"/>			
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetChannelActivacionesCopyBSCS">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-channel-adapter  id="ftpOutboundActivacionesCopyBSCS"
+				channel="ftpGetChannelActivacionesCopyBSCS"				
+				remote-directory="${ftpActivaciones.remotedirectoryCopy}"				
+				session-factory="csfbscso"				
+				order="1" >
+	<int-sftp:request-handler-advice-chain>
+			<int:retry-advice />
+			 <bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<property name="onSuccessExpression" value="payload.delete()" />
+	      	 </bean>			
+	</int-sftp:request-handler-advice-chain>				
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />		
+	</int-sftp:outbound-channel-adapter>
+	<!-- BATCH BGH  -->
+	<int-sftp:inbound-channel-adapter id="ftpInboundBGHBSCS"
+				channel="ftpGetChannelBGHBSCS"
+				session-factory="csfbscso"	
+				filename-pattern="*.NOPROCESSXX"		
+				remote-directory="${ftpBgh.remotedirectory}"				
+				local-directory="${ftpBgh.localprocess}">
+		<int:poller cron="${ftpBgh.cronExpressionOutbound}" max-messages-per-poll="-1"/>			
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetChannelBGHBSCS">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-channel-adapter  id="ftpOutboundBGHBSCS"
+				channel="ftpGetChannelBGHBSCS"				
+				remote-directory="${ftpBgh.remotedirectory}"				
+				session-factory="csfbscso"				
+				order="1" >	
+		<int-sftp:request-handler-advice-chain>
+			<int:retry-advice />
+			 <bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<property name="onSuccessExpression" value="payload.delete()" />
+	      	 </bean>			
+		</int-sftp:request-handler-advice-chain>	
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />		
+	</int-sftp:outbound-channel-adapter>
+	<!-- BATCH CENTRALES DE RIESGO  -->
+	<int-sftp:inbound-channel-adapter id="ftpInboundCentralesRiesgoBSCS"
+				channel="ftpGetChannelCentralesRiesgoBSCS"
+				session-factory="csfbscso"	
+				filename-pattern="*.NOPROCESSXX"		
+				remote-directory="${ftpCentralesRiesgo.remotedirectory}"				
+				local-directory="${ftpCentralesRiesgo.localprocess}">
+		<int:poller cron="${ftpCentralesRiesgo.cronExpressionOutbound}" max-messages-per-poll="-1"/>			
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetChannelCentralesRiesgoBSCS">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-channel-adapter  id="ftpOutboundCentralesRiesgoBSCS"
+				channel="ftpGetChannelCentralesRiesgoBSCS"				
+				remote-directory="${ftpCentralesRiesgo.remotedirectory}"				
+				session-factory="csfbscso"				
+				order="1" >	
+		<int-sftp:request-handler-advice-chain>
+			<int:retry-advice />
+			 <bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<property name="onSuccessExpression" value="payload.delete()" />
+	      	 </bean>			
+		</int-sftp:request-handler-advice-chain>	
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />		
+	</int-sftp:outbound-channel-adapter>
+	<!-- BATCH FRANQUICIAS  -->
+	<int-sftp:inbound-channel-adapter id="ftpInboundFranquiciasBSCS"
+				channel="ftpGetChannelFranquiciasBSCS"
+				session-factory="csfbscso"	
+				filename-pattern="*.NOPROCESSXX"		
+				remote-directory="${ftpFranquiciasAscard.remotedirectory}"				
+				local-directory="${ftpFranquiciasAscard.localprocess}">
+		<int:poller cron="${ftpFranquiciasAscard.cronExpressionOutbound}" max-messages-per-poll="-1"/>			
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetChannelFranquiciasBSCS">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-channel-adapter  id="ftpOutboundFranquiciasBSCS"
+				channel="ftpGetChannelFranquiciasBSCS"				
+				remote-directory="${ftpFranquiciasAscard.remotedirectory}"				
+				session-factory="csfbscso"				
+				order="1" >	
+		<int-sftp:request-handler-advice-chain>
+			<int:retry-advice />
+			 <bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<property name="onSuccessExpression" value="payload.delete()" />
+	      	 </bean>			
+		</int-sftp:request-handler-advice-chain>	
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />		
+	</int-sftp:outbound-channel-adapter>
+	<!-- BATCH INTERFAZ CONTABLE  -->
+	<int-sftp:inbound-channel-adapter id="ftpInboundInterfazContableBSCS"
+				channel="ftpGetChannelInterfazContableBSCS"
+				session-factory="csfbscso"	
+				filename-pattern="*.NOPROCESSXX"		
+				remote-directory="${ftpInterfazContable.remotedirectory}"				
+				local-directory="${ftpInterfazContable.localprocess}">
+		<int:poller cron="${ftpInterfazContable.cronExpressionOutbound}" max-messages-per-poll="-1"/>			
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetChannelInterfazContableBSCS">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-channel-adapter  id="ftpOutboundInterfazContableBSCS"
+				channel="ftpGetChannelInterfazContableBSCS"				
+				remote-directory="${ftpInterfazContable.remotedirectory}"				
+				session-factory="csfbscso"				
+				order="1" >	
+		<int-sftp:request-handler-advice-chain>
+			<int:retry-advice />
+			 <bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<property name="onSuccessExpression" value="payload.delete()" />
+	      	 </bean>			
+		</int-sftp:request-handler-advice-chain>	
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />		
+	</int-sftp:outbound-channel-adapter>
+	<!-- BATCH REPORTE CONTABILIDAD  -->
+	<int-sftp:inbound-channel-adapter id="ftpInboundReporteContabilidadBSCS"
+				channel="ftpGetChannelReporteContabilidadBSCS"
+				session-factory="csfbscso"	
+				filename-pattern="*.NOPROCESSXX"		
+				remote-directory="${ftpReporteContabilidad.remotedirectory}"				
+				local-directory="${ftpReporteContabilidad.localprocess}">
+		<int:poller cron="${ftpReporteContabilidad.cronExpressionOutbound}" max-messages-per-poll="-1"/>			
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetChannelReporteContabilidadBSCS">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-channel-adapter  id="ftpOutboundReporteContabilidadBSCS"
+				channel="ftpGetChannelReporteContabilidadBSCS"				
+				remote-directory="${ftpReporteContabilidad.remotedirectory}"				
+				session-factory="csfbscso"				
+				order="1" >	
+		<int-sftp:request-handler-advice-chain>
+			<int:retry-advice />
+			 <bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<property name="onSuccessExpression" value="payload.delete()" />
+	      	 </bean>			
+		</int-sftp:request-handler-advice-chain>	
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />		
+	</int-sftp:outbound-channel-adapter>
+	<!-- BATCH RSE  -->
+	<int-sftp:inbound-channel-adapter id="ftpInboundRSEBSCS"
+				channel="ftpGetChannelRSEBSCS"
+				session-factory="csfbscso"	
+				filename-pattern="*.NOPROCESSXX"		
+				remote-directory="${ftpRse.remotedirectory}"				
+				local-directory="${ftpRse.localprocess}">
+		<int:poller cron="${ftpRse.cronExpressionOutbound}" max-messages-per-poll="-1"/>			
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetChannelRSEBSCS">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-channel-adapter  id="ftpOutboundRSEBSCS"
+				channel="ftpGetChannelRSEBSCS"				
+				remote-directory="${ftpRse.remotedirectory}"				
+				session-factory="csfbscso"				
+				order="1" >	
+		<int-sftp:request-handler-advice-chain>
+			<int:retry-advice />
+			 <bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<property name="onSuccessExpression" value="payload.delete()" />
+	      	 </bean>			
+		</int-sftp:request-handler-advice-chain>	
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />		
+	</int-sftp:outbound-channel-adapter>
+	<!-- BATCH SALIDA DE RECAUDO ASCARD  -->
+	<int-sftp:inbound-channel-adapter id="ftpInboundSalidaDeRecaudoBSCS"
+				channel="ftpGetChannelSalidaDeRecaudoBSCS"
+				session-factory="csfbscso"	
+				filename-pattern="*.NOPROCESSXX"		
+				remote-directory="${ftpSalidaRecaudoAscard.remotedirectory}"				
+				local-directory="${ftpSalidaRecaudoAscard.localprocess}">
+		<int:poller cron="${ftpSalidaRecaudoAscard.cronExpressionOutbound}" max-messages-per-poll="-1"/>			
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetChannelSalidaDeRecaudoBSCS">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-channel-adapter  id="ftpOutboundSalidaDeRecaudoBSCS"
+				channel="ftpGetChannelSalidaDeRecaudoBSCS"				
+				remote-directory="${ftpSalidaRecaudoAscard.remotedirectory}"				
+				session-factory="csfbscso"				
+				order="1" >	
+		<int-sftp:request-handler-advice-chain>
+			<int:retry-advice />
+			 <bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<property name="onSuccessExpression" value="payload.delete()" />
+	      	 </bean>			
+		</int-sftp:request-handler-advice-chain>	
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />		
+	</int-sftp:outbound-channel-adapter>
+	<!-- BATCH SALIDA RECHAZOS ASCARD  -->
+	<int-sftp:inbound-channel-adapter id="ftpIntboundRechazosAscardexcelBSCS"
+				channel="ftpGetChannelRechazasosAscardexcel"
+				session-factory="csfbscso"	
+				filename-pattern="*.NOPROCESSXX"		
+				remote-directory="${ftpRechazosAscard.remotedirectoryOutBound}"				
+				local-directory="${ftpRechazosAscard.localprocess}">
+		<int:poller cron="${ftpRechazosAscard.cronExpressionOutbound}" max-messages-per-poll="-1"/>			
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetChannelRechazasosAscardexcel">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-channel-adapter  id="ftpOutboundRechazosAscardexcelBSCS"
+				channel="ftpGetChannelRechazasosAscardexcel"				
+				remote-directory="${ftpRechazosAscard.remotedirectoryOutBound}"				
+				session-factory="csfbscso"				
+				order="1" >	
+		<int-sftp:request-handler-advice-chain>
+			<int:retry-advice />
+			 <bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<property name="onSuccessExpression" value="payload.delete()" />
+	      	 </bean>			
+		</int-sftp:request-handler-advice-chain>	
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />		
+	</int-sftp:outbound-channel-adapter>
+	<!-- BATCH RESPUESTAS NODEVADES NO MONETARIAS  -->
+	<int-sftp:inbound-channel-adapter id="ftpIntboundRtaNovedadesNoMonetariasBSCS"
+				channel="ftpGetChannelRtaNovedadesNoMonetariasBSCS"
+				session-factory="csfbscso"	
+				filename-pattern="*.NOPROCESSXX"		
+				remote-directory="${ftpRespuestaNovNomonetarias.remotedirectoryOutBound}"				
+				local-directory="${ftpRespuestaNovNomonetarias.localprocess}">
+		<int:poller cron="${ftpRespuestaNovNomonetarias.cronExpressionOutbound}" max-messages-per-poll="-1"/>			
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetChannelRtaNovedadesNoMonetariasBSCS">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-channel-adapter  id="ftpOutboundRtaNovedadesNoMonetariasBSCS"
+				channel="ftpGetChannelRtaNovedadesNoMonetariasBSCS"				
+				remote-directory="${ftpRespuestaNovNomonetarias.remotedirectoryOutBound}"				
+				session-factory="csfbscso"				
+				order="1" >	
+		<int-sftp:request-handler-advice-chain>
+			<int:retry-advice />
+			 <bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<property name="onSuccessExpression" value="payload.delete()" />
+	      	 </bean>			
+		</int-sftp:request-handler-advice-chain>	
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />		
+	</int-sftp:outbound-channel-adapter>
+	<!-- BATCH RESPUESTAS SalidaCancelacionSaldosAFavor  -->
+	<int-sftp:inbound-channel-adapter id="ftpIntboundSalidaCancelacionSaldosAFavorBSCS"
+				channel="ftpGetChannelSalidaCancelacionSaldosAFavorBSCS"
+				session-factory="csfbscso"	
+				filename-pattern="*.NOPROCESSXX"		
+				remote-directory="${ftpCancelacionSaldosAFavor.remotedirectoryOutBound}"				
+				local-directory="${ftpCancelacionSaldosAFavor.localprocess}">
+		<int:poller cron="${ftpCancelacionSaldosAFavor.cronExpressionOutbound}" max-messages-per-poll="-1"/>			
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetChannelSalidaCancelacionSaldosAFavorBSCS">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-channel-adapter  id="ftpOutboundftpIntboundSalidaCancelacionSaldosAFavorBSCS"
+				channel="ftpGetChannelSalidaCancelacionSaldosAFavorBSCS"				
+				remote-directory="${ftpCancelacionSaldosAFavor.remotedirectoryOutBound}"				
+				session-factory="csfbscso"				
+				order="1" >	
+		<int-sftp:request-handler-advice-chain>
+			<int:retry-advice />
+			 <bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<property name="onSuccessExpression" value="payload.delete()" />
+	      	 </bean>			
+		</int-sftp:request-handler-advice-chain>	
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />		
+	</int-sftp:outbound-channel-adapter>
+	<!-- BATCH SALIDA AJUSTES ASCARD-->
+	<int-sftp:inbound-channel-adapter id="ftpIntboundSalidaAjustesAscardBSCS"
+				channel="ftpGetChannelSalidaAjustesAscardBSCS"
+				session-factory="csfbscso"	
+				filename-pattern="*.NOPROCESSXX"		
+				remote-directory="${ftpSalidaAjustesAscard.remotedirectoryOutBound}"				
+				local-directory="${ftpSalidaAjustesAscard.localprocess}">
+		<int:poller cron="${ftpSalidaAjustesAscard.cronExpressionOutbound}" max-messages-per-poll="-1"/>			
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetChannelSalidaAjustesAscardBSCS">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-channel-adapter  id="ftpOutboundftpSalidaAjustesAscardBSCS"
+				channel="ftpGetChannelSalidaAjustesAscardBSCS"				
+				remote-directory="${ftpSalidaAjustesAscard.remotedirectoryOutBound}"				
+				session-factory="csfbscso"				
+				order="1" >	
+		<int-sftp:request-handler-advice-chain>
+			<int:retry-advice />
+			 <bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<property name="onSuccessExpression" value="payload.delete()" />
+	      	 </bean>			
+		</int-sftp:request-handler-advice-chain>	
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />		
+	</int-sftp:outbound-channel-adapter>
+	<!-- BATCH SALIDA AJUSTES ASCARD PNA-->
+	<int-sftp:inbound-channel-adapter id="ftpIntboundSalidaAjustesAscarPNAdBSCS"
+				channel="ftpGetChannelSalidaAjustesAscardPNABSCS"
+				session-factory="csfbscso"	
+				filename-pattern="*.NOPROCESSXX"		
+				remote-directory="${ftpSalidaAjustesAscard.remotedirectoryOutBoundPNA}"				
+				local-directory="${ftpSalidaAjustesAscard.localprocessPNA}">
+		<int:poller cron="${ftpSalidaAjustesAscard.cronExpressionOutbound}" max-messages-per-poll="-1"/>			
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetChannelSalidaAjustesAscardPNABSCS">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-channel-adapter  id="ftpOutboundftpSalidaAjustesAscardpPNABSCS"
+				channel="ftpGetChannelSalidaAjustesAscardPNABSCS"				
+				remote-directory="${ftpSalidaAjustesAscard.remotedirectoryOutBoundPNA}"				
+				session-factory="csfbscso"				
+				order="1" >	
+		<int-sftp:request-handler-advice-chain>
+			<int:retry-advice />
+			 <bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<property name="onSuccessExpression" value="payload.delete()" />
+	      	 </bean>			
+		</int-sftp:request-handler-advice-chain>	
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />		
+	</int-sftp:outbound-channel-adapter>
+	<!-- BATCH SALIDA APLICACION PNAS ASC-->
+	<int-sftp:inbound-channel-adapter id="ftpIntboundSalidaAplicacionPnaAscAscardBSCS"
+				channel="ftpGetChannelSalidaAplicacionPnaAscAscardBSCS"
+				session-factory="csfbscso"	
+				filename-pattern="*.NOPROCESSXX"		
+				remote-directory="${ftpSalidaAplicacionPNAAsc.remotedirectoryOutBound}"				
+				local-directory="${ftpSalidaAplicacionPNAAsc.localprocess}">
+		<int:poller cron="${ftpSalidaAplicacionPNAAsc.cronExpressionOutbound}" max-messages-per-poll="-1"/>			
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetChannelSalidaAplicacionPnaAscAscardBSCS">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-channel-adapter  id="ftpOutboundSalidaAplicacionPnaAscAscardBSCS"
+				channel="ftpGetChannelSalidaAplicacionPnaAscAscardBSCS"				
+				remote-directory="${ftpSalidaAplicacionPNAAsc.remotedirectoryOutBound}"				
+				session-factory="csfbscso"				
+				order="1" >	
+		<int-sftp:request-handler-advice-chain>
+			<int:retry-advice />
+			 <bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<property name="onSuccessExpression" value="payload.delete()" />
+	      	 </bean>			
+		</int-sftp:request-handler-advice-chain>	
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />		
+	</int-sftp:outbound-channel-adapter>
+	<!-- BATCH COBRANZAS BSSC-->
+	<int-sftp:inbound-channel-adapter id="ftpIntboundCobranzasAscardBSCS"
+				channel="ftpGetChannelCobranzasAscardBSCS"
+				session-factory="csfbscso"	
+				filename-pattern="*.NOPROCESSXX"		
+				remote-directory="${ftpCobranzas.remotedirectoryOutBound}"				
+				local-directory="${ftpCobranzas.localprocess}">
+		<int:poller cron="${ftpCobranzas.cronExpressionOutbound}" max-messages-per-poll="-1"/>			
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetChannelCobranzasAscardBSCS">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-channel-adapter  id="ftpOutboundCobranzasAscardBSCS"
+				channel="ftpGetChannelCobranzasAscardBSCS"				
+				remote-directory="${ftpCobranzas.remotedirectoryOutBound}"				
+				session-factory="csfbscso"				
+				order="1" >	
+		<int-sftp:request-handler-advice-chain>
+			<int:retry-advice />
+			 <bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<property name="onSuccessExpression" value="payload.delete()" />
+	      	 </bean>			
+		</int-sftp:request-handler-advice-chain>	
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />		
+	</int-sftp:outbound-channel-adapter>
+	<!-- BATCH BLOQUEO TERMINAR SICACOM BSSC-->
+	<int-sftp:inbound-channel-adapter id="ftpIntboundBloqueoTerminalSicacomdBSCS"
+				channel="ftpGetChannelBloqueoTerminalSicacomBSCS"
+				session-factory="csfbscso"	
+				filename-pattern="*.NOPROCESSXX"		
+				remote-directory="${ftpBloqueoTerminal.remotedirectoryOutBound}"				
+				local-directory="${ftpBloqueoTerminal.sicacom.localprocess}">
+		<int:poller cron="${ftpBloqueoTerminal.cronExpressionOutbound}" max-messages-per-poll="-1"/>			
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetChannelBloqueoTerminalSicacomBSCS">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-channel-adapter  id="ftpOutboundBloqueoTerminalSicacomBSCS"
+				channel="ftpGetChannelBloqueoTerminalSicacomBSCS"				
+				remote-directory="${ftpBloqueoTerminal.remotedirectoryOutBound}"				
+				session-factory="csfbscso"				
+				order="1" >	
+		<int-sftp:request-handler-advice-chain>
+			<int:retry-advice />
+			 <bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<property name="onSuccessExpression" value="payload.delete()" />
+	      	 </bean>			
+		</int-sftp:request-handler-advice-chain>	
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />		
+	</int-sftp:outbound-channel-adapter>
+	<!-- BATCH BLOQUEO TERMINAR RECAUDO BANCOS BSSC-->
+	<int-sftp:inbound-channel-adapter id="ftpIntboundBloqueoTerminalRbancosdBSCS"
+				channel="ftpGetChannelBloqueoTerminalRbancosBSCS"
+				session-factory="csfbscso"	
+				filename-pattern="*.NOPROCESSXX"		
+				remote-directory="${ftpBloqueoTerminal.remotedirectoryOutBound}"				
+				local-directory="${ftpBloqueoTerminal.recaudoBancos.localprocess}">
+		<int:poller cron="${ftpBloqueoTerminal.cronExpressionOutbound}" max-messages-per-poll="-1"/>			
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetChannelBloqueoTerminalRbancosBSCS">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-channel-adapter  id="ftpOutboundBloqueoTerminalRbancosBSCS"
+				channel="ftpGetChannelBloqueoTerminalRbancosBSCS"				
+				remote-directory="${ftpBloqueoTerminal.remotedirectoryOutBound}"				
+				session-factory="csfbscso"				
+				order="1" >	
+		<int-sftp:request-handler-advice-chain>
+			<int:retry-advice />
+			 <bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<property name="onSuccessExpression" value="payload.delete()" />
+	      	 </bean>			
+		</int-sftp:request-handler-advice-chain>	
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />		
+	</int-sftp:outbound-channel-adapter>
+	<!-- BATCH REPORTE BLOQUEO TERMINAR BSCS-->
+	<int-sftp:inbound-channel-adapter id="ftpIntboundReporteBloqueoTerminaldBSCS"
+				channel="ftpGetChannelReporteBloqueoTerminalBSCS"
+				session-factory="csfbscso"	
+				filename-pattern="*.NOPROCESSXX"		
+				remote-directory="${ftpBloqueoTerminal.remotedirectoryOutBound}"				
+				local-directory="${ftpBloqueoTerminal.reporte.localprocess}">
+		<int:poller cron="${ftpBloqueoTerminal.cronExpressionOutbound}" max-messages-per-poll="-1"/>			
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetChannelReporteBloqueoTerminalBSCS">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-channel-adapter  id="ftpOutboundReporteBloqueoTerminalBSCS"
+				channel="ftpGetChannelReporteBloqueoTerminalBSCS"				
+				remote-directory="${ftpBloqueoTerminal.remotedirectoryOutBound}"				
+				session-factory="csfbscso"				
+				order="1" >	
+		<int-sftp:request-handler-advice-chain>
+			<int:retry-advice />
+			 <bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<property name="onSuccessExpression" value="payload.delete()" />
+	      	 </bean>			
+		</int-sftp:request-handler-advice-chain>	
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />		
+	</int-sftp:outbound-channel-adapter>
+	<!-- BATCH ENDEUDAMIENTO BSCS-->
+	<int-sftp:inbound-channel-adapter id="ftpIntboundEndeudamientoBSCS"
+				channel="ftpGetChannelEndeudamientoBSCS"
+				session-factory="csfbscso"	
+				filename-pattern="*.NOPROCESSXX"		
+				remote-directory="${ftpEnduadamiento.remotedirectoryOutBound}"				
+				local-directory="${ftpEnduadamiento.localprocess}">
+		<int:poller cron="${ftpEnduadamiento.cronExpressionOutbound}" max-messages-per-poll="-1"/>			
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetChannelEndeudamientoBSCS">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-channel-adapter  id="ftpOutboundEndeudamientoBSCS"
+				channel="ftpGetChannelEndeudamientoBSCS"				
+				remote-directory="${ftpEnduadamiento.remotedirectoryOutBound}"				
+				session-factory="csfbscso"				
+				order="1" >	
+		<int-sftp:request-handler-advice-chain>
+			<int:retry-advice />
+			 <bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<property name="onSuccessExpression" value="payload.delete()" />
+	      	 </bean>			
+		</int-sftp:request-handler-advice-chain>	
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />		
+	</int-sftp:outbound-channel-adapter>	
+	<!-- BATCH METRICAS ASCARD-->
+	<int-sftp:inbound-channel-adapter id="ftpIntboundMetricasBSCS"
+				channel="ftpGetChannelMetricasBSCS"
+				session-factory="csfbscso"	
+				filename-pattern="*.NOPROCESSXX"		
+				remote-directory="${ftpMetricasAscard.remotedirectoryOutBound}"				
+				local-directory="${ftpMetricasAscard.localprocess}">
+		<int:poller cron="${ftpMetricasAscard.cronExpressionOutbound}" max-messages-per-poll="-1"/>			
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetChannelMetricasBSCS">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-channel-adapter  id="ftpOutboundMetricasBSCS"
+				channel="ftpGetChannelMetricasBSCS"				
+				remote-directory="${ftpMetricasAscard.remotedirectoryOutBound}"				
+				session-factory="csfbscso"				
+				order="1" >	
+		<int-sftp:request-handler-advice-chain>
+			<int:retry-advice />
+			 <bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<property name="onSuccessExpression" value="payload.delete()" />
+	      	 </bean>			
+		</int-sftp:request-handler-advice-chain>	
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />		
+	</int-sftp:outbound-channel-adapter>		
+	<!-- BATCH RESPUESTAS NODEVADES NO MONETARIAS MODIFICACION ESTADO  -->
+	<int-sftp:inbound-channel-adapter id="ftpIntboundRtaNovedadesNoMonetariasMEBSCS"
+				channel="ftpGetChannelRtaNovedadesNoMonetariasMEBSCS"
+				session-factory="csfbscso"	
+				filename-pattern="*.NOPROCESSXX"		
+				remote-directory="${ftpRespuestaNovNoMonetariasAceleracion.modificacionEstado.remotedirectoryOutBound}"				
+				local-directory="${ftpRespuestaNovNoMonetariasAceleracion.modificacionEstado.localprocess}">
+		<int:poller cron="${ftpRespuestaNovNoMonetariasAceleracion.cronExpressionOutbound}" max-messages-per-poll="-1"/>			
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetChannelRtaNovedadesNoMonetariasMEBSCS">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-channel-adapter  id="ftpOutboundRtaNovedadesNoMonetariasMEBSCS"
+				channel="ftpGetChannelRtaNovedadesNoMonetariasMEBSCS"				
+				remote-directory="${ftpRespuestaNovNoMonetariasAceleracion.modificacionEstado.remotedirectoryOutBound}"				
+				session-factory="csfbscso"				
+				order="1" >	
+		<int-sftp:request-handler-advice-chain>
+			<int:retry-advice />
+			 <bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<property name="onSuccessExpression" value="payload.delete()" />
+	      	 </bean>			
+		</int-sftp:request-handler-advice-chain>	
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />		
+	</int-sftp:outbound-channel-adapter>
+	<!-- BATCH RESPUESTAS NODEVADES NO MONETARIAS EXCLUSION ACELERACION  -->
+	<int-sftp:inbound-channel-adapter id="ftpIntboundRtaNovedadesNoMonetariasEABSCS"
+				channel="ftpGetChannelRtaNovedadesNoMonetariasEABSCS"
+				session-factory="csfbscso"	
+				filename-pattern="*.NOPROCESSXX"		
+				remote-directory="${ftpRespuestaNovNoMonetariasAceleracion.exclusionAceleracion.remotedirectoryOutBound}"				
+				local-directory="${ftpRespuestaNovNoMonetariasAceleracion.exclusionAceleracion.localprocess}">
+		<int:poller cron="${ftpRespuestaNovNoMonetariasAceleracion.cronExpressionOutbound}" max-messages-per-poll="-1"/>			
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetChannelRtaNovedadesNoMonetariasEABSCS">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-channel-adapter  id="ftpOutboundRtaNovedadesNoMonetariasEABSCS"
+				channel="ftpGetChannelRtaNovedadesNoMonetariasEABSCS"				
+				remote-directory="${ftpRespuestaNovNoMonetariasAceleracion.exclusionAceleracion.remotedirectoryOutBound}"				
+				session-factory="csfbscso"				
+				order="1" >	
+		<int-sftp:request-handler-advice-chain>
+			<int:retry-advice />
+			 <bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<property name="onSuccessExpression" value="payload.delete()" />
+	      	 </bean>			
+		</int-sftp:request-handler-advice-chain>	
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />		
+	</int-sftp:outbound-channel-adapter>
+	<!-- BATCH RESPUESTAS NODEVADES NO MONETARIAS MARCACION NUNCA  -->
+	<int-sftp:inbound-channel-adapter id="ftpIntboundRtaNovedadesNoMonetariasMNBSCS"
+				channel="ftpGetChannelRtaNovedadesNoMonetariasMNBSCS"
+				session-factory="csfbscso"	
+				filename-pattern="*.NOPROCESSXX"		
+				remote-directory="${ftpRespuestaNovNoMonetariasAceleracion.marcacionNunca.remotedirectoryOutBound}"				
+				local-directory="${ftpRespuestaNovNoMonetariasAceleracion.marcacionNunca.localprocess}">
+		<int:poller cron="${ftpRespuestaNovNoMonetariasAceleracion.cronExpressionOutbound}" max-messages-per-poll="-1"/>			
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetChannelRtaNovedadesNoMonetariasMNBSCS">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-channel-adapter  id="ftpOutboundRtaNovedadesNoMonetariasMNBSCS"
+				channel="ftpGetChannelRtaNovedadesNoMonetariasMNBSCS"				
+				remote-directory="${ftpRespuestaNovNoMonetariasAceleracion.marcacionNunca.remotedirectoryOutBound}"				
+				session-factory="csfbscso"				
+				order="1" >	
+		<int-sftp:request-handler-advice-chain>
+			<int:retry-advice />
+			 <bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<property name="onSuccessExpression" value="payload.delete()" />
+	      	 </bean>			
+		</int-sftp:request-handler-advice-chain>	
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />		
+	</int-sftp:outbound-channel-adapter>	
+	<!-- BATCH RESPUESTAS NODEVADES NO MONETARIAS MARCACION NO COBRO  -->
+	<int-sftp:inbound-channel-adapter id="ftpIntboundRtaNovedadesNoMonetariasMNCBSCS"
+				channel="ftpGetChannelRtaNovedadesNoMonetariasMNCBSCS"
+				session-factory="csfbscso"	
+				filename-pattern="*.NOPROCESSXX"		
+				remote-directory="${ftpRespuestaNovNoMonetariasAceleracion.marcacionNoCobro.remotedirectoryOutBound}"				
+				local-directory="${ftpRespuestaNovNoMonetariasAceleracion.marcacionNoCobro.localprocess}">
+		<int:poller cron="${ftpRespuestaNovNoMonetariasAceleracion.cronExpressionOutbound}" max-messages-per-poll="-1"/>			
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetChannelRtaNovedadesNoMonetariasMNCBSCS">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-channel-adapter  id="ftpOutboundRtaNovedadesNoMonetariasMNCBSCS"
+				channel="ftpGetChannelRtaNovedadesNoMonetariasMNCBSCS"				
+				remote-directory="${ftpRespuestaNovNoMonetariasAceleracion.marcacionNoCobro.remotedirectoryOutBound}"				
+				session-factory="csfbscso"				
+				order="1" >	
+		<int-sftp:request-handler-advice-chain>
+			<int:retry-advice />
+			 <bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<property name="onSuccessExpression" value="payload.delete()" />
+	      	 </bean>			
+		</int-sftp:request-handler-advice-chain>	
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />		
+	</int-sftp:outbound-channel-adapter>		
+	<!-- BATCH RESPUESTAS NODEVADES NO MONETARIAS CAMBIO DE CICLO  -->
+	<int-sftp:inbound-channel-adapter id="ftpIntboundRtaNovedadesNoMonetariasCCBSCS"
+				channel="ftpGetChannelRtaNovedadesNoMonetariasCCBSCS"
+				session-factory="csfbscso"	
+				filename-pattern="*.NOPROCESSXX"		
+				remote-directory="${ftpRespuestaNovNoMonetariasAceleracion.cambioDeCiclo.remotedirectoryOutBound}"				
+				local-directory="${ftpRespuestaNovNoMonetariasAceleracion.cambioDeCiclo.localprocess}">
+		<int:poller cron="${ftpRespuestaNovNoMonetariasAceleracion.cronExpressionOutbound}" max-messages-per-poll="-1"/>			
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetChannelRtaNovedadesNoMonetariasCCBSCS">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-channel-adapter  id="ftpOutboundRtaNovedadesNoMonetariasCCBSCS"
+				channel="ftpGetChannelRtaNovedadesNoMonetariasCCBSCS"				
+				remote-directory="${ftpRespuestaNovNoMonetariasAceleracion.cambioDeCiclo.remotedirectoryOutBound}"				
+				session-factory="csfbscso"				
+				order="1" >	
+		<int-sftp:request-handler-advice-chain>
+			<int:retry-advice />
+			 <bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<property name="onSuccessExpression" value="payload.delete()" />
+	      	 </bean>			
+		</int-sftp:request-handler-advice-chain>	
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />		
+	</int-sftp:outbound-channel-adapter>
+	<!-- BATCH RESPUESTAS BATCH APLICACION PAGO  -->
+	<int-sftp:inbound-channel-adapter id="ftpIntboundAplicacionPagoBSCS"
+				channel="ftpGetChannelAplicacionPagoBSCS"
+				session-factory="csfbscso"	
+				filename-pattern="*.NOPROCESSXX"		
+				remote-directory="${ftpAplicacionPago.remotedirectory}"				
+				local-directory="${ftpAplicacionPago.localprocess}">
+		<int:poller cron="${ftpAplicacionPago.cronExpressionOutbound}" max-messages-per-poll="-1"/>			
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetChannelAplicacionPagoBSCS">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-channel-adapter  id="ftpOutboundAplicacionPagoBSCS"
+				channel="ftpGetChannelAplicacionPagoBSCS"				
+				remote-directory="${ftpAplicacionPago.remotedirectory}"				
+				session-factory="csfbscso"				
+				order="1" >	
+		<int-sftp:request-handler-advice-chain>
+			<int:retry-advice />
+			 <bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<property name="onSuccessExpression" value="payload.delete()" />
+	      	 </bean>			
+		</int-sftp:request-handler-advice-chain>	
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />		
+	</int-sftp:outbound-channel-adapter>		
+</beans>

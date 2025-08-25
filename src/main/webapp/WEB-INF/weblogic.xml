@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wls:weblogic-web-app xmlns:wls="http://xmlns.oracle.com/weblogic/weblogic-web-app" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd http://xmlns.oracle.com/weblogic/weblogic-web-app http://xmlns.oracle.com/weblogic/weblogic-web-app/1.3/weblogic-web-app.xsd">
+	<wls:container-descriptor>
+	<!-- dejar para 11 y para configuracion ftp quitar para 12 -->
+<!--   	 	<wls:prefer-web-inf-classes>true</wls:prefer-web-inf-classes>  -->
+	</wls:container-descriptor>
+<!--    <wls:context-root>BatchFinancialIntegratorReversosDePago</wls:context-root> -->
+<!--    <wls:context-root>BatchFinancialIntegratorMediosMagneticos</wls:context-root> -->
+<!--    <wls:context-root>BatchFinancialIntegratorResReaperturaCreditoCierreObl</wls:context-root>  -->
+<!--    <wls:context-root>BatchFinancialIntegratorReaperturaCreditoCierreObl</wls:context-root> -->
+<!--    <wls:context-root>BatchFinancialIntegratorActivaciones</wls:context-root>  -->
+<!--    <wls:context-root>BatchFinancialIntegratorConfiguracionFTP</wls:context-root>  -->
+<!--    <wls:context-root>BatchFinancialIntegratorControlRecaudo</wls:context-root>  -->
+<!--    <wls:context-root>BatchFinancialIntegratorInformacionPreciosDigitales</wls:context-root> -->
+<!--	<wls:context-root>BatchFinancialIntegratorProcesoCobranzas</wls:context-root> -->
+<!--    <wls:context-root>BatchFinancialIntegratorAjustesAscard</wls:context-root> -->
+<!--    <wls:context-root>BatchFinancialIntegratorCierreObligaciones</wls:context-root> -->
+<!--    <wls:context-root>BatchFinancialIntegratorReporteActivacionesFallidas</wls:context-root> -->
+<!--   	<wls:context-root>BatchFinancialIntegratorRegistrarBeneficio</wls:context-root> -->
+<!--    <wls:context-root>BatchFinancialIntegratorPagosNoAbonados</wls:context-root>-->
+<!--    <wls:context-root>BatchFinancialIntegratorCuotasGratis</wls:context-root> -->
+<!--    <wls:context-root>BatchFinancialIntegratorRegistrarRespuestaNovedades</wls:context-root> -->
+<!--    <wls:context-root>BatchFinancialIntegratorReportesSaldoFavor</wls:context-root> -->
+<!--    <wls:context-root>BatchFinancialIntegratorPromocionAscard</wls:context-root> -->
+<!--    <wls:context-root>BatchFinancialIntegratorInhabilitacionTerminales</wls:context-root> -->
+<!--    <wls:context-root>BatchFinancialIntegratorConsultaUsuarios</wls:context-root> -->
+<!-- 	<wls:context-root>BatchFinancialIntegratorImeiReprocesados</wls:context-root> -->
+<!--	<wls:context-root>BatchFinancialIntegratorActualizacionDeSaldos</wls:context-root>  -->
+<!--    <wls:context-root>BatchFinancialIntegratorSalidaRecaudosASCARD</wls:context-root> -->
+<!--    <wls:context-root>BatchFinancialIntegratorCiclosFacturacion</wls:context-root> -->
+<!--    <wls:context-root>BatchFinancialIntegratorGestorDeBloqueo</wls:context-root> -->
+<!--    <wls:context-root>BatchFinancialIntegratorCambioTasasInteres</wls:context-root> -->
+<!--    <wls:context-root>BatchFinancialIntegratorCancelacionCreditoReporteDiario</wls:context-root>  -->
+<!--    <wls:context-root>BatchFinancialIntegratorCancelacionCreditoReporteMensual</wls:context-root>  -->
+<!--    <wls:context-root>BatchFinancialIntegratorAccesoUsuario</wls:context-root>  -->
+<!--    <wls:context-root>BatchFinancialIntegratorNovedadesDemograficas</wls:context-root>  -->
+<!--    <wls:context-root>BatchFinancialIntegratorNovedadesNoMonetarias</wls:context-root>  -->
+<!--    <wls:context-root>BatchFinancialRespuestaNovedadesNoMonetariasV2</wls:context-root>  -->
+<!--    <wls:context-root>BatchFinancialIntegratorReporteBloqueoEquipos</wls:context-root>  -->
+    <wls:context-root>BatchFinancialIntegratorRelanzamientoActivacion</wls:context-root>
+<!--    <wls:context-root>BatchFinancialIntegratorCargueMasivo</wls:context-root>  -->
+<!--    <wls:context-root>BatchFinancialIntegratorReintentoActualizacionIMEI</wls:context-root> -->
+<!--    <wls:context-root>BatchFinancialIntegratorReporteActualizacionIMEI</wls:context-root> -->
+<!--    <wls:context-root>BatchFinancialIntegratorReporteFacturacion</wls:context-root>  -->
+<!--    <wls:context-root>BatchFinancialIntegratorCreditosCastigados</wls:context-root>  -->
+<!--    <wls:context-root>BatchFinancialIntegratorRespuestaCreditosCastigados</wls:context-root>  -->
+<!--	<wls:context-root>BatchFinancialIntegratorReporteTasasInteres</wls:context-root>  -->
+<!--	<wls:context-root>BatchFinancialIntegratorAperturaCreditosCastigados</wls:context-root>  -->
+<!--	<wls:context-root>BatchFinancialIntegratorRespuestaAperturaCreditosCastigados</wls:context-root>  -->
+<!--	<wls:context-root>BatchFinancialIntegratorActualizacionCreditosCastigadosDatgen</wls:context-root>  -->
+<!--	<wls:context-root>BatchFinancialIntegratorActualizacionCreditosCastigadosEdadMora</wls:context-root>  -->
+<!--	<wls:context-root>BatchFinancialIntegratorActualizacionCreditosCobranzaIntegrador</wls:context-root> -->
+<!--	<wls:context-root>BatchFinancialIntegratorReporteDataCredito</wls:context-root>  -->
+<!--	<wls:context-root>BatchFinancialIntegratorAuditoriaSOX</wls:context-root> -->
+<!--    <wls:context-root>BatchFinancialIntegratorReporteCreditosCastigadosAct</wls:context-root> -->
+<!--    <wls:context-root>BatchFinancialIntegratorConsultaUsr</wls:context-root>  -->
+<!--    <wls:context-root>BatchFinancialIntegratorDesglosePagos</wls:context-root>  -->
+<!--    <wls:context-root>BatchFinancialIntegratorTasaCredito</wls:context-root>  -->
+<!--	<wls:context-root>BatchFinancialIntegratorActivacionFinanciacionReserva</wls:context-root>  -->
+<!--	<wls:context-root>BatchFinancialIntegratorReporteInterfazContableIntegrador</wls:context-root>  -->
+<!--	<wls:context-root>BatchFinancialIntegratorReporteCRMDIntegrador</wls:context-root>  -->
+<!--	<wls:context-root>BatchFinancialIntegratorVentaCarteraActivar</wls:context-root> -->
+<!--	<wls:context-root>BatchFinancialIntegratorReporteCreditosInsolutos</wls:context-root> -->
+<!--    <wls:context-root>BatchFinancialIntegratorReporteCancelacionCreditoDigital</wls:context-root>  -->
+
+</wls:weblogic-web-app>

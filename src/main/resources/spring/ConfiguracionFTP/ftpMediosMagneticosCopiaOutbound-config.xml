@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:int-sftp="http://www.springframework.org/schema/integration/sftp"
+	xmlns:util="http://www.springframework.org/schema/util" xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans classpath:xsd/spring-beans-4.0.xsd
+		http://www.springframework.org/schema/context classpath:xsd/spring-context-4.0.xsd
+		http://www.springframework.org/schema/integration/sftp   classpath:xsd/spring-integration-sftp.xsd
+		http://www.springframework.org/schema/util classpath:xsd/spring-util-3.0.xsd">
+
+   <context:property-placeholder
+		ignore-resource-not-found="true"
+		location="file:${PATH_PROPERTIES_INTEGRATOR}/ConfiguracionFTP/ConfiguracionFTP.properties" />
+	<bean id="log4jInitialization"
+		class="org.springframework.beans.factory.config.MethodInvokingFactoryBean" lazy-init="false">
+		<property name="targetClass" value="org.springframework.util.Log4jConfigurer" />
+		<property name="targetMethod" value="initLogging" />
+		<property name="arguments">
+			<list>
+				<value>file:${PATH_PROPERTIES_INTEGRATOR}/ConfiguracionFTP/ConfiguracionFTP-log4j.xml</value>
+			</list>
+		</property>
+	</bean> 
+	<bean id="ftpClientFactoryMediosMagneticosCopiaOutput" class="org.springframework.integration.sftp.session.DefaultSftpSessionFactory">	
+		<property name="host" value="${ftpMediosMagneticosCopia.host}"/>
+		<property name="port" value="${ftpMediosMagneticosCopia.port}"/>
+		<property name="user" value="${ftpMediosMagneticosCopia.username}"/>	
+		<property name="password" value="${ftpMediosMagneticosCopia.password}"/>
+	</bean>
+	<bean id="csfMediosMagneticosCopiaOutput" class="org.springframework.integration.file.remote.session.CachingSessionFactory">
+		<constructor-arg ref="ftpClientFactoryMediosMagneticosCopiaOutput" />		
+		<property name="poolSize" value="${ftpMediosMagneticosCopiaOutbound.sessionCacheSize}" />
+		<property name="sessionWaitTimeout" value="${ftpMediosMagneticosCopiaOutbound.sessionWaitTimeout}" />
+	</bean>	
+	<!-- BATCH MEDIOS MAGNETICOS COPIA-->  
+	<int-sftp:inbound-channel-adapter id="ftpInboundMediosMagneticosCopia"
+				channel="ftpGetChannelMediosMagneticosCopia"
+				session-factory="csfMediosMagneticosCopiaOutput"	
+				filename-pattern="${ftpMediosMagneticosCopia.filenamePattern}"		
+				remote-directory="${ftpMediosMagneticosCopia.remotedirectory}"				
+				local-directory="${ftpMediosMagneticosCopia.localprocess}">
+		<int:poller cron="${ftpMediosMagneticosCopia.cronExpressionOutbound}" max-messages-per-poll="-1"/>		
+	</int-sftp:inbound-channel-adapter>
+	<int:channel id="ftpGetChannelMediosMagneticosCopia">
+		<int:queue />
+	</int:channel>
+	<int-sftp:outbound-channel-adapter  id="ftpOutboundMediosMagneticosCopia"
+				channel="ftpGetChannelMediosMagneticosCopia"				
+				remote-directory="${ftpMediosMagneticosCopia.remotedirectory}"				
+				session-factory="csfMediosMagneticosCopiaOutput"				
+				order="1" >	
+		<int-sftp:request-handler-advice-chain>
+			<int:retry-advice />
+			 <bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<property name="onSuccessExpression" value="payload.delete()" />
+	      	 </bean>			
+		</int-sftp:request-handler-advice-chain>	
+		<int:poller fixed-rate="1000" max-messages-per-poll="-1" />		
+	</int-sftp:outbound-channel-adapter>
+</beans>
