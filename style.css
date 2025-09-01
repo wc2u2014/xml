@@ -1,0 +1,21 @@
+/* 
+    Document   : style
+    Created on : 12-jul-2013, 9:59:30
+    Author     : Gabriel
+    Description:
+        Purpose of the stylesheet follows.
+*/
+
+root { 
+    display: block;
+}
+
+body{
+ font-family: "Verdana", sans-serif;   
+}
+h1{
+    font-size: 16pt;
+}
+table{
+    font-size: 12pt;
+}

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+       xmlns:h="http://java.sun.com/jsf/html">
+    <head>
+        <title>Buscar Placa Segura</title>
+        <meta name="viewport" content="width=device-width"/>
+        <link href="style.css" rel="stylesheet" type="text/css"/>
+    </head>
+      <body style="style">
+       <!-- <center>-->
+            <h1><b> Validación de Placa Segura</b></h1>
+            <br></br>
+        <!--</center>-->
+        <h:form>
+          <!--  <center>-->
+                <table >   
+                    <tr> 
+                        <td>
+                            <b> Instrucciones:</b></td>
+                    </tr>
+                    <tr><td>
+                            <h:outputLabel value="Por favor, ingrese número de placa " for="certificado"/>
+                        </td> </tr>
+                    <tr><td>
+                            <br/><br/>
+                            <b><h:outputLabel value="Placa: "/></b>
+                            <h:inputText id="certificado" label="certificado" required="true" value="#{app_BeanPlaca.placa}"/><h:commandButton id="buscar2" value="Buscar" action="App_ConfirmacionPlaca"
+                                                 style="font-size: 12pt"/>
+                            <h:message for="certificado" /> </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Ejemplo: AAA0000
+                            <br/><br/><br/>    
+                            
+                        </td></tr>
+                </table>
+          <!--  </center>-->
+        </h:form> <h:form>
+            <table><tr><td>
+            <center>
+                                <h:commandButton id="buscar3" value="Salir" action="index"
+                                                 style="font-size: 12pt"/></center>
+             </td></tr></table>                                                 
+        </h:form>
+
+    </body>
+</html>

@@ -1,0 +1,92 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://java.sun.com/jsf/html"
+      xmlns:c="http://java.sun.com/jsp/jstl/core">
+    
+    <h:head>
+        <title>Confirmacion</title>
+        <link href="style.css" rel="stylesheet" type="text/css"/>
+    </h:head>
+     <script type="text/javascript">
+  
+     
+     function imprimir(numero) { 
+        
+    
+      
+      var  ls_pag ="http://sistemaunico.ant.gob.ec:6033/impCertificados/paginas/gce_ejecuta.jsp?ps_certificado="+numero;
+    //var  ls_pag ="http://sistemaunico.ant.gob.ec:7001/testReportes/paginas/gcp_ejecucion.jsp?ps_certificado="+numero;
+       window.open(ls_pag);
+       
+     }
+        
+//, target="_seft",'height=620,width=1100,left=100,top=0,toolbar=no,resizable=yes,scrollbars=YES, status=no, location=no');                    
+     </script>
+    <body style="font-family: Helvetica ">
+    <center>
+        <h1><b><h:outputLabel value="Información sobre Certificado: "/>
+                <!--<h:outputLabel value="${app_BeanCertificado.documento}"/>-->
+            </b>
+            <!--  <a href="#" id="imprimir" onClick="imprimir('${app_BeanCertificado.documento}');" style="padding-left: 10px"> -->
+                 <h:outputLabel value="${app_BeanCertificado.documento}"/>
+             <!--     </a>-->
+        </h1>  
+        <br></br>
+        <table  border="0">
+                <tr>
+                   <td width="200" style="TEXT-ALIGN: left"> <c:forEach var="valores" items="${app_BeanCertificado.etiqueta}">
+                     <b>${valores}:</b>
+                      <br></br>
+                     </c:forEach>  
+                   </td>
+                   <td width="500" style="TEXT-ALIGN: left">
+                      <c:forEach var="res" items="${app_BeanCertificado.valor}">
+                      ${res}
+                      <br></br>
+                   </c:forEach> 
+                   </td>
+                </tr>
+       </table>
+        
+        <!--<h:form>
+            <br/><br/>
+            <h:commandButton value="Regresar" action="App_BuscarCertificado" style="font-size:12pt "/>
+            
+            <h:commandButton value="Imprimir" action="gce_ejecuta?ps_certificado=${app_BeanCertificado.valor}" style="font-size:12pt "/>
+        </h:form> -->
+        
+        
+         <table>
+         <tr> 
+            <h:form>
+            
+                
+                <td  align="center"  style="padding-top: 30px;">
+                   <h:outputLabel value="Si desea imprimir el certificado haga clic "/> 
+                  <a href="#" id="imprimir" onClick="imprimir('${app_BeanCertificado.documento}');" style="padding-left: 0px; padding-top: 50px">  
+                  <h:outputLabel value=" Aqui"/>  
+             </a>
+            </td>
+                 </h:form>
+         </tr> 
+              <tr>
+           <h:form>
+            
+              <td style="padding-top: 15px;"> 
+              <div align="center">
+                 <h:commandButton value="Regresar" action="App_BuscarCertificado" style="font-size:12pt "/>
+                 <!-- <h:inputHidden id="orden" value=""/>
+                 <h:commandButton    id="refrescar"  value="Refrescar" image="imagen/icoarefrescar.png"  title="Refrescar consulta de la orden" action="App_RespuestaOT" style="font-size:12pt "/>-->
+              </div>
+             </td>    
+                
+           </h:form>
+        </tr>
+      </table>
+        
+        
+              </center>
+    </body>
+</html>
+

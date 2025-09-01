@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+
+      xmlns:h="http://java.sun.com/jsf/html">
+    <head>
+        <title>Validación de Certificado</title>
+        <meta name="viewport" content="width=device-width"/>
+        <link href="style.css" rel="stylesheet" type="text/css"/>
+    </head>
+    <body style="font-family: Helvetica ">
+        <!-- <center>-->
+        <h1><b> Validación de Certificados </b></h1>
+        <br></br>
+        <!--</center>-->
+        <h:form>
+            <!-- <center>-->
+            <table border="0" cellspacing="0" cellpadding="1">  
+                <tr> 
+                    <td height="25" width="50%"><b> Instrucciones:</b></td>
+                    <td height="25"> Ejemplo: CCO-2014-00000001</td>
+                </tr>
+
+                <tr >
+                    <td height="25">Por favor, ingrese número de certificado</td> 
+                    <td   rowspan="10">
+                    <img height="400" width="400" src="logo_cer.png"/></td>
+                </tr> 
+
+                <tr >
+                    <td height="25">
+                       
+                        <b><h:outputLabel value="Certificado: "/></b>
+                        <h:inputText id="certificado" label="certificado" required="true" value="#{app_BeanCertificado.documento}"/> <h:commandButton id="buscar3" value="Buscar" action="App_ConfirmacionCertificado"
+                                                                                                                                                      style="font-size: 12pt"/>
+                        <h:message for="certificado" /> 
+                    </td>														
+
+                </tr>
+
+                <tr>
+                    <td height="25">
+                        
+                    </td>  
+                </tr>
+              <tr>
+                    <td height="25">
+                        
+                    </td>  
+                </tr>
+                <tr>
+                    <td height="30">
+                        
+                    </td>  
+                </tr>
+                <tr>
+                    <td height="25">
+                        
+                    </td>  
+                </tr>
+                 <tr>
+                    <td height="25">
+                        
+                    </td>  
+                </tr>
+                 <tr>
+                    <td height="25">
+                        
+                    </td>  
+                </tr>
+                <tr>
+                    <td height="25">
+                        
+                    </td>  
+                </tr>
+                <tr>
+                    <td height="25">
+                        
+                    </td>  
+                </tr>
+            </table>
+
+            <!--  </center>-->
+        </h:form><h:form>
+            <!--<center>-->
+            <!--  <h:commandButton  id="buscar3" value="Salir" action="index" style="font-size: 12pt"/> -->
+            <!--      </center>-->
+        </h:form>
+
+    </body>
+</html>

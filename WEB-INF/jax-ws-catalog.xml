@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog" prefer="system">
+    <system systemId="http://172.17.4.111:7023/WsCargaReporte-WsCargaReporte-context-root/MetodosPort?WSDL" uri="wsdl/172.17.4.111_7023/WsCargaReporte-WsCargaReporte-context-root/MetodosPort.wsdl"/>
+    <system systemId="http://172.17.4.111:7023/WsCargaReporte-WsCargaReporte-context-root/MetodosPort?xsd=1" uri="wsdl/172.17.4.111_7023/WsCargaReporte-WsCargaReporte-context-root/MetodosPort.xsd_1.xsd"/>
+</catalog>
